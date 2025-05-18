@@ -1,0 +1,49 @@
+.noscript-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem auto;
+    box-shadow: 0 2px 8px rgba(216, 81, 81, 0.1);
+    border: 1px solid #ffcccc;
+    border-radius: 0.5rem;
+    background-color: #ffeeee;
+    padding: 1.5rem;
+    max-width: 800px;
+    color: #d85151;
+    text-align: center;
+}
+
+.noscript-warning p {
+    margin: 0.5rem 0;
+    width: 100%;
+}
+
+.noscript-warning a {
+    color: #c13131;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.noscript-warning a:hover {
+    color: #e63939;
+}
+
+@media (prefers-color-scheme: dark) {
+    .noscript-warning {
+        border-color: #763636;
+        background-color: #3d2222;
+        color: #ff9b9b;
+    }
+
+    .noscript-warning svg {
+        stroke: #ff9b9b;
+    }
+
+    .noscript-warning a {
+        color: #ff7b7b;
+    }
+
+    .noscript-warning a:hover {
+        color: #ffaeae;
+    }
+}
