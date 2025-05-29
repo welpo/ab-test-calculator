@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=894ac0b0">
+    <link rel="stylesheet" href="styles.css?h=053e7da0">
 </head>
 
 <body>
@@ -50,24 +50,32 @@
         </div>
 
         <main class="content-container">
-            <header class="calculator-header">
-                <div class="header-content">
-                    <div class="robot">
-                        <div class="robot-face">
-                            <div class="robot-eyes">
-                                <div class="robot-eye" id="leftEye"></div>
-                                <div class="robot-eye" id="rightEye"></div>
-                            </div>
-                            <div class="robot-mouth"></div>
+        <header class="calculator-header">
+            <div class="header-content">
+                <div class="robot">
+                    <div class="robot-face">
+                        <div class="robot-eyes">
+                            <div class="robot-eye" id="leftEye"></div>
+                            <div class="robot-eye" id="rightEye"></div>
+                        </div>
+                        <div class="robot-mouth"></div>
+                    </div>
+                </div>
+                <h1 class="calculator-title">A/B Test Sample Size/Duration Calculator</h1>
+                <div class="tooltip-container">
+                    <div class="cog-container">
+                        <a href="#advanced-configuration" class="advanced-header" title="Advanced configuration">
+                            <svg class="icon" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </a>
+                        <div class="status-indicator" id="advancedStatusDot"></div>
+                    </div>
+                    <div class="rich-tooltip" id="advancedTooltip">
+                        <div class="tooltip-modifications" id="tooltipModifications"></div>
                         </div>
                     </div>
-                    <h1 class="calculator-title">A/B Test Sample Size/Duration Calculator</h1>
-                    <a href="#advanced-configuration" class="advanced-header" title="Advanced configuration">
-                        <svg class="icon" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                        </svg>
-                    </a>
                 </div>
                 <p class="calculator-subtitle">Get quick sample size & duration estimates for your experiments!</p>
             </header>
@@ -94,9 +102,9 @@
 
                 <div class="input-group">
                     <div class="label-row">
-                        <label for="baseline" class="input-label">Current conversion rate (%)</label>
-                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about current conversion rate">
-                            <span class="tooltip">The expected conversion rate for your control group; your current performance before any changes.</span>
+                        <label for="baseline" class="input-label">Current rate (%)</label>
+                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about current conversion, sign-up… rate">
+                            <span class="tooltip">The expected (conversion, sign-up…) rate for your control group; your current performance before any changes.</span>
                         </span>
                     </div>
                     <input type="number" id="baseline" class="input-field" value="5" min="0.1" max="100" step="0.1">
@@ -303,7 +311,7 @@
                                     </div>
                                     <div class="radio-group-vertical">
                                         <label class="radio-label">
-                                            <input type="radio" name="testType" id="oneSided" value="one-sided">
+                                            <input type="radio" name="testType" id="oneSided" value="one-sided" checked>
                                             <span class="radio-text">One-sided</span>
                                             <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about one-sided tests">
                                                 <span class="tooltip">Detects changes in one direction (e.g. improvements).</span>
@@ -311,7 +319,7 @@
                                         </label>
 
                                         <label class="radio-label">
-                                            <input type="radio" name="testType" id="twoSided" value="two-sided" checked>
+                                            <input type="radio" name="testType" id="twoSided" value="two-sided">
                                             <span class="radio-text">Two-sided</span>
                                             <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about two-sided tests">
                                                 <span class="tooltip">Detects changes in either direction (increases OR decreases).</span>
@@ -420,7 +428,7 @@
                     <div class="modal-body">
                         <ul class="tips-list">
                             <li>Match "Daily visitors" to your test location: for homepage tests, count only homepage visitors, not all website visitors.</li>
-                            <li>Calculate "Current conversion rate" specific to your test: for a homepage signup button, use "sign-ups from homepage ÷ homepage visitors".</li>
+                            <li>Calculate "Current rate" specific to your test: for a homepage signup button, use "sign-ups from homepage ÷ homepage visitors".</li>
                             <li>Run the experiment for at least a full week to account for day-of-week effects.</li>
                             <li>Consider upcoming seasonal events or campaigns that might affect your metrics.</li>
                             <li>Ending tests early is like judging a cake before it's fully baked: it leads to half-baked decisions. <a href="stop-early-stopping.osc.garden" class="external">Do not peek at significance levels!</a></li>
@@ -584,7 +592,7 @@
         </footer>
     </div>
 
-    <script defer src="app.js?h=ee98ad84"></script>
+    <script defer src="app.js?h=a55c9542"></script>
     <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

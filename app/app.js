@@ -1,12 +1,23 @@
-let calculationDebounceTimer = null;
-const calculationDelay = 80;
 // Singular defaults used when adding rows.
 const DEFAULT_MDE = 30;
 const DEFAULT_DAYS = 30;
 const DEFAULT_MDES = [5, 10, 15, 20, 25];
 const DEFAULT_TIMES = [7, 14, 30, 60, 90];
-let sortDebounceTimer = null;
+const ADVANCED_DEFAULTS = {
+  alpha: 0.05,
+  power: 0.8,
+  testType: "one-sided",
+  correction: "none",
+  trafficFlow: 100,
+  buffer: 0,
+};
+
+const CALCULATION_DELAY = 80;
 const sortDelay = 300;
+let sortDebounceTimer = null;
+let calculationDebounceTimer = null;
+let hasCustomTrafficDistribution = false;
+
 /**
  * Calculates the inverse standard normal cumulative distribution function (quantile function).
  * Approximates the Z-score for a given probability p.
@@ -155,6 +166,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const tabTableLabel = document.querySelector('label[for="tab-table"]');
 
   // Advanced settings.
+  const advancedStatusDot = document.getElementById("advancedStatusDot");
+  const tooltipModifications = document.getElementById("tooltipModifications");
+  const advancedHeader = document.querySelector(".advanced-header");
   const alphaInput = document.getElementById("alpha");
   const alphaRangeInput = document.getElementById("alphaRange");
   const powerInput = document.getElementById("power");
@@ -173,7 +187,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const relativeChangeElem = document.getElementById("relativeChange");
   const fromValueElem = document.getElementById("fromValue");
   const toValueElem = document.getElementById("toValue");
-  const variantsGridElem = document.getElementById("variantsGrid");
   const variantDistributionContainer = document.getElementById(
     "variantDistributionContainer"
   );
@@ -326,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
     clearTimeout(calculationDebounceTimer);
     calculationDebounceTimer = setTimeout(() => {
       updateCalculation();
-    }, calculationDelay);
+    }, CALCULATION_DELAY);
   }
 
   function handleTabKeyPress(e) {
@@ -417,6 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function updateVariantDistributionUI(variantCount) {
+    hasCustomTrafficDistribution = false;
     variantDistributionContainer.innerHTML = "";
     const equalPercentage = Math.floor(100 / variantCount);
     const remainderPercentage = 100 - equalPercentage * variantCount;
@@ -457,6 +471,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function handleSliderChange(e) {
+    hasCustomTrafficDistribution = true;
     const changedSlider = e.target;
     const changedVariant = changedSlider.dataset.variant;
     const newValue = parseInt(changedSlider.value);
@@ -585,6 +600,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function resetToEqualDistribution() {
+    hasCustomTrafficDistribution = false;
     let totalToDistribute = 100;
     let slidersToUpdate = [];
     const allSliders = document.querySelectorAll(".variant-range");
@@ -645,6 +661,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     updateMDEToTimeTable();
     updateTimeToMDETable();
+    checkAdvancedDefaults();
   }
 
   function getVariantDistributions(variantCount) {
@@ -753,13 +770,25 @@ document.addEventListener("DOMContentLoaded", function () {
     toValue
   ) {
     const timeText = formatTimeEstimate(duration);
+    if (testType === "non-inferiority") {
+      const params = getCalculationParameters();
+      const baseline = parseFloat(fromValue);
+      let worstAcceptable;
+      if (params.isRelativeMode) {
+        const mdeDecimal = params.mde / 100;
+        worstAcceptable = baseline * (1 - mdeDecimal);
+      } else {
+        worstAcceptable = baseline - params.mde;
+      }
+      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove the new rate is not worse than <span class="highlight">${worstAcceptable.toFixed(
+        2
+      )}%</span> (baseline: <span id="fromValue">${fromValue}</span>%, margin: <span class="highlight">${relativeChange}</span>).`;
+    }
     switch (testType) {
       case "two-sided":
         return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> change in either direction (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
       case "one-sided":
         return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
-      case "non-inferiority":
-        return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove the new variant is not worse than control by more than <span class="highlight">${relativeChange}</span> (baseline: <span id="fromValue">${fromValue}</span>%).`;
       case "equivalence":
         return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently within <span class="highlight">${relativeChange}</span> (baseline: <span id="fromValue">${fromValue}</span>%).`;
       default:
@@ -1160,6 +1189,71 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       addDeleteButton(cell, row, tableBody);
     });
+  }
+
+  function checkAdvancedDefaults() {
+    const currentValues = {
+      alpha: parseFloat(alphaInput.value),
+      power: parseFloat(powerInput.value),
+      testType: document.querySelector('input[name="testType"]:checked').value,
+      correction: correctionSelect.value,
+      trafficFlow: parseFloat(trafficFlowInput.value),
+      buffer: parseFloat(bufferInput.value),
+    };
+    const modifications = [];
+    Object.entries(ADVANCED_DEFAULTS).forEach(([key, defaultValue]) => {
+      if (currentValues[key] !== defaultValue) {
+        modifications.push(
+          getModificationDescription(key, currentValues[key], defaultValue)
+        );
+      }
+    });
+    if (hasCustomTrafficDistribution) {
+      modifications.push("Traffic distribution: Custom");
+    }
+    const hasModifications = modifications.length > 0;
+    if (hasModifications) {
+      advancedStatusDot.classList.add("active");
+      advancedHeader.classList.remove("no-modifications");
+      tooltipModifications.innerHTML = modifications.join("<br>");
+    } else {
+      advancedStatusDot.classList.remove("active");
+      advancedHeader.classList.add("no-modifications");
+      tooltipModifications.innerHTML = "";
+    }
+  }
+
+  function getModificationDescription(key, currentValue) {
+    const descriptions = {
+      alpha: `Significance level: ${currentValue}`,
+      power: `Statistical power: ${currentValue}`,
+      testType: `Test type: ${formatTestType(currentValue)}`,
+      correction: `Multiple comparisons correction: ${formatCorrection(
+        currentValue
+      )}`,
+      trafficFlow: `Traffic flow: ${currentValue}%`,
+      buffer: `Buffer: ${currentValue}%`,
+    };
+    return descriptions[key] || `${key}: ${currentValue}`;
+  }
+
+  function formatTestType(value) {
+    const types = {
+      "one-sided": "One-sided",
+      "two-sided": "Two-sided",
+      "non-inferiority": "Non-inferiority",
+      equivalence: "Equivalence",
+    };
+    return types[value] || value;
+  }
+
+  function formatCorrection(value) {
+    const corrections = {
+      none: "None",
+      bonferroni: "Bonferroni",
+      sidak: "Šidák",
+    };
+    return corrections[value] || value;
   }
 
   function setupInputListeners(tableBody) {

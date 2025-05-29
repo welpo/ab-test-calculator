@@ -40,7 +40,7 @@ This calculator uses statistical power analysis to determine the required sample
 
 1. **You provide**:
    - Daily visitors to the test area
-   - Current conversion rate
+   - Current (conversion, sign-up…) rate
    - Minimum detectable effect (MDE) - the smallest improvement worth detecting
    - Number of variants in your test
 

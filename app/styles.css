@@ -81,7 +81,7 @@ body {
     background-color: var(--color-bg-light);
     padding: 20px;
     min-height: 100vh;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
     color: var(--color-text);
     line-height: 1.6;
     font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -123,7 +123,6 @@ body {
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
     background-color: var(--color-accent-light);
-    overflow: hidden;
 }
 
 .tools-nav a {
@@ -153,7 +152,7 @@ body {
 }
 
 .tools-nav a:not(:first-child):not(.active) {
-    box-shadow: -1px 0 0 0 rgba(0,0,0,0.07);
+    box-shadow: -1px 0 0 0 rgba(0, 0, 0, 0.07);
 }
 
 /* ========== MAIN CONTAINER ========== */
@@ -167,7 +166,7 @@ body {
     width: var(--container-width);
     min-width: var(--container-width);
     max-width: var(--container-width);
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
 }
 
 header {
@@ -185,7 +184,7 @@ header {
     background-color: var(--color-bg);
     padding: var(--spacing-md);
     width: var(--container-width);
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
 }
 
 /* ========== HEADER STYLES ========== */
@@ -206,6 +205,7 @@ header {
     margin-bottom: var(--spacing-xs);
     width: 100%;
 }
+
 .calculator-title {
     color: var(--accent);
     font-weight: 600;
@@ -229,12 +229,9 @@ header {
 
 .advanced-header {
     display: flex;
-    position: absolute;
-    top: 0;
-    right: 0;
     justify-content: center;
     align-items: center;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     cursor: pointer;
     border: none;
     border-radius: 50%;
@@ -242,12 +239,108 @@ header {
     width: 36px;
     height: 36px;
     color: var(--accent);
-    text-decoration: none;
 }
 
 .advanced-header:hover {
     transform: rotate(30deg);
     background-color: var(--color-accent-light);
+}
+
+.tooltip-container {
+    position: relative;
+}
+
+
+.status-indicator {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    transform: scale(0);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border: 2px solid var(--color-bg);
+    border-radius: 50%;
+    background: var(--accent);
+    width: 10px;
+    height: 10px;
+}
+
+.status-indicator.active {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.rich-tooltip {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    visibility: hidden;
+    opacity: 0;
+    z-index: 1000;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius);
+    background: var(--color-tooltip-bg);
+    padding: 12px 16px;
+    color: var(--color-text);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.rich-tooltip::after {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: var(--color-tooltip-bg);
+    content: '';
+}
+
+.tooltip-container:hover .rich-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-container:has(.advanced-header.no-modifications) .rich-tooltip {
+    display: none;
+}
+.advanced-header.no-modifications + .rich-tooltip {
+    display: none;
+}
+
+/* Tooltip content styling */
+.tooltip-modifications {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltip-modification {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.modification-label {
+    color: var(--color-text-light);
+    font-size: 12px;
+}
+
+.modification-value {
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.tooltip-summary {
+    margin-top: 8px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 8px;
+    color: var(--color-text-light);
+    font-size: 12px;
+    text-align: center;
 }
 
 a.external:not(:has(img, svg, video, picture, figure))::after {
@@ -315,6 +408,7 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
 }
+
 /* ========== INPUT GROUPS ========== */
 .input-group {
     margin-bottom: var(--spacing-xs);
@@ -388,7 +482,7 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     margin-right: var(--spacing-xs);
 }
 
-.radio-label input:checked ~ .radio-label:before {
+.radio-label input:checked~.radio-label:before {
     border-color: var(--accent);
 }
 
@@ -632,7 +726,7 @@ select.input-field {
     background-color: var(--color-bg-lighter);
 }
 
-.tab-input:checked + .tab-label {
+.tab-input:checked+.tab-label {
     border-color: var(--color-border);
     border-bottom-color: none;
     background-color: var(--color-bg);
@@ -650,8 +744,8 @@ select.input-field {
     padding: var(--spacing-md);
 }
 
-#tab-single:checked ~ #tab-single-content,
-#tab-table:checked ~ #tab-table-content {
+#tab-single:checked~#tab-single-content,
+#tab-table:checked~#tab-table-content {
     display: block;
 }
 
@@ -877,7 +971,7 @@ ol {
     padding-left: 1.5rem;
 }
 
-ol > li {
+ol>li {
     margin-bottom: 1rem;
 }
 
@@ -888,7 +982,7 @@ ul {
     list-style-type: disc;
 }
 
-ul > li {
+ul>li {
     margin-bottom: 0.3rem;
 }
 
@@ -1375,15 +1469,15 @@ input[type="range"]::-moz-range-thumb {
 
 @media (hover: hover) {
     .delete-row {
-        opacity: 0; /* Hidden by default on devices with hover capability */
+        opacity: 0;
     }
 
     tr:hover .delete-row {
-        opacity: 0.7; /* Show when hovering over the row */
+        opacity: 0.7;
     }
 
     .delete-row:hover {
-        opacity: 1; /* Full opacity when hovering the button itself */
+        opacity: 1;
     }
 }
 
@@ -1438,11 +1532,11 @@ input[type="range"]::-moz-range-thumb {
     display: none;
 }
 
-#comparisonToggle:checked ~ .comparison-content {
+#comparisonToggle:checked~.comparison-content {
     max-height: 1000px;
 }
 
-#comparisonToggle:checked ~ .comparison-header .comparison-toggle::after {
+#comparisonToggle:checked~.comparison-header .comparison-toggle::after {
     transform: translateX(-50%) scaleY(0);
 }
 
@@ -1515,12 +1609,15 @@ input[type="range"]::-moz-range-thumb {
     .inputs-grid {
         grid-template-columns: 1fr;
     }
+
     .config-grid {
         grid-template-columns: 1fr;
     }
+
     .results-grid {
         grid-template-columns: 1fr;
     }
+
     .comparison-table {
         font-size: var(--font-size-sm);
     }
@@ -1544,5 +1641,11 @@ input[type="range"]::-moz-range-thumb {
 
     .tab-content {
         white-space: normal;
+    }
+}
+
+@media (hover: none) {
+    .rich-tooltip {
+        display: none !important;
     }
 }
