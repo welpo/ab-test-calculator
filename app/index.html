@@ -34,14 +34,14 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=053e7da0">
+    <link rel="stylesheet" href="styles.css?h=3398a553">
 </head>
 
 <body>
     <div class="app-container">
 
         <div class="header-container">
-            <h1 class="tools-title"><a href="https://ab.osc.garden">Óscar’s A/B Testing Toolkit</a></h1>
+            <h1 class="tools-title"><a href="https://ab.osc.garden">Óscar's A/B Testing Toolkit</a></h1>
             <nav class="tools-nav">
                 <a class="active">Sample Size/Duration Calculator</a>
                 <a href="https://srm.osc.garden">SRM Calculator</a>
@@ -49,37 +49,40 @@
             </nav>
         </div>
 
-        <main class="content-container">
-        <header class="calculator-header">
-            <div class="header-content">
-                <div class="robot">
-                    <div class="robot-face">
-                        <div class="robot-eyes">
-                            <div class="robot-eye" id="leftEye"></div>
-                            <div class="robot-eye" id="rightEye"></div>
-                        </div>
-                        <div class="robot-mouth"></div>
+<input type="checkbox" id="settings-checkbox" class="settings-checkbox">
+<main class="main-layout-container settings-hidden">
+    <header class="calculator-header">
+        <div class="header-content">
+            <div class="robot">
+                <div class="robot-face">
+                    <div class="robot-eyes">
+                        <div class="robot-eye" id="leftEye"></div>
+                        <div class="robot-eye" id="rightEye"></div>
                     </div>
+                    <div class="robot-mouth"></div>
                 </div>
-                <h1 class="calculator-title">A/B Test Sample Size/Duration Calculator</h1>
-                <div class="tooltip-container">
-                    <div class="cog-container">
-                        <a href="#advanced-configuration" class="advanced-header" title="Advanced configuration">
-                            <svg class="icon" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                        </a>
-                        <div class="status-indicator" id="advancedStatusDot"></div>
-                    </div>
-                    <div class="rich-tooltip" id="advancedTooltip">
-                        <div class="tooltip-modifications" id="tooltipModifications"></div>
-                        </div>
-                    </div>
+            </div>
+            <h1 class="calculator-title">A/B Test Sample Size/Duration Calculator</h1>
+            <div class="tooltip-container">
+                <div class="cog-container">
+                    <label for="settings-checkbox" class="advanced-header" title="Advanced configuration">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </label>
+                    <div class="status-indicator" id="advancedStatusDot"></div>
                 </div>
-                <p class="calculator-subtitle">Get quick sample size & duration estimates for your experiments!</p>
-            </header>
+                <div class="rich-tooltip" id="advancedTooltip">
+                    <div class="tooltip-modifications" id="tooltipModifications"></div>
+                </div>
+            </div>
+        </div>
+        <p class="calculator-subtitle">Get quick sample size & duration estimates for your experiments!</p>
+    </header>
 
+    <div class="content-wrapper">
+        <div class="calculator-content">
             <noscript>
                 <div class="noscript-warning">
                     <p>Enable JavaScript to plan your experiments.</p>
@@ -256,343 +259,342 @@
                     Share plan
                 </a>
             </div>
+        </div>
 
-            <!-- Advanced Configuration Modal -->
-            <div id="advanced-configuration" class="modal-overlay">
-                <a href="#" class="modal-backdrop"></a>
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Advanced configuration</h3>
-                        <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
-                    </div>
-                    <div class="modal-body">
-                        <div class="config-section">
-                            <h4 class="config-section-title">Statistical parameters</h4>
-                            <div class="config-grid">
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label for="alpha" class="input-label">Significance level (α)</label>
-                                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about alpha">
-                                            <span class="tooltip">The probability of detecting a difference when none exists.</span>
-                                        </span>
-                                    </div>
-                                    <div class="range-group">
-                                        <input type="range" id="alphaRange" class="range-field" min="0.01" max="0.1" step="0.01" value="0.05">
-                                        <div class="range-values">
-                                            <span>0.01</span>
-                                            <input type="number" id="alpha" class="input-field short-number-input" min="0.01" max="0.1" step="0.001" value="0.05">
-                                            <span>0.1</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label for="power" class="input-label">Statistical power (1-β)</label>
-                                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about statistical power">
-                                            <span class="tooltip">The probability of detecting an effect, if it exists.</span>
-                                        </span>
-                                    </div>
-                                    <div class="range-group">
-                                        <input type="range" id="powerRange" class="range-field" min="0.7" max="0.95" step="0.05" value="0.8">
-                                        <div class="range-values">
-                                            <span>0.7</span>
-                                            <input type="number" id="power" class="input-field short-number-input" min="0.7" max="0.95" step="0.05" value="0.8">
-                                            <span>0.95</span>
-                                        </div>
-                                    </div>
-                                </div>
+        <aside class="settings-panel" id="settings-panel">
+            <label for="settings-checkbox" class="modal-backdrop"></label>
+            <div class="settings-header">
+                <h3 class="settings-title">Advanced configuration</h3>
+                <label for="settings-checkbox" class="settings-close mobile-only">&times;</label>
+            </div>
+            <div class="settings-content">
+                <div class="config-section">
+                    <h4 class="config-section-title">Statistical parameters</h4>
+                    <div class="config-grid">
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label for="alpha" class="input-label">Significance level (α)</label>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about alpha">
+                                    <span class="tooltip">The probability of detecting a difference when none exists.</span>
+                                </span>
                             </div>
-
-                            <div class="config-grid">
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label class="input-label">Test type</label>
-                                    </div>
-                                    <div class="radio-group-vertical">
-                                        <label class="radio-label">
-                                            <input type="radio" name="testType" id="oneSided" value="one-sided" checked>
-                                            <span class="radio-text">One-sided</span>
-                                            <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about one-sided tests">
-                                                <span class="tooltip">Detects changes in one direction (e.g. improvements).</span>
-                                            </span>
-                                        </label>
-
-                                        <label class="radio-label">
-                                            <input type="radio" name="testType" id="twoSided" value="two-sided">
-                                            <span class="radio-text">Two-sided</span>
-                                            <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about two-sided tests">
-                                                <span class="tooltip">Detects changes in either direction (increases OR decreases).</span>
-                                            </span>
-                                        </label>
-
-                                        <label class="radio-label">
-                                            <input type="radio" name="testType" id="nonInferiority" value="non-inferiority">
-                                            <span class="radio-text">Non-inferiority</span>
-                                            <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about non-inferiority tests">
-                                                <span class="tooltip">Tests if the new variant is "not worse" than control by more than your margin.</span>
-                                            </span>
-                                        </label>
-
-                                        <label class="radio-label">
-                                            <input type="radio" name="testType" id="equivalence" value="equivalence">
-                                            <span class="radio-text">Equivalence</span>
-                                            <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about equivalence tests">
-                                                <span class="tooltip">Tests if two variants perform equivalently (within your margin).</span>
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label for="correction" class="input-label">Multiple testing correction</label>
-                                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about multiple testing correction">
-                                            <span class="tooltip">Controls false positive rate when comparing multiple variants to control.</span>
-                                        </span>
-                                    </div>
-                                    <div class="select-wrapper">
-                                        <select id="correction" class="input-field">
-                                            <option value="none">None</option>
-                                            <option value="bonferroni">Bonferroni</option>
-                                            <option value="sidak">Šidák</option>
-                                        </select>
-                                    </div>
+                            <div class="range-group">
+                                <input type="range" id="alphaRange" class="range-field" min="0.01" max="0.1" step="0.01" value="0.05">
+                                <div class="range-values">
+                                    <span>0.01</span>
+                                    <input type="number" id="alpha" class="input-field short-number-input" min="0.01" max="0.1" step="0.001" value="0.05">
+                                    <span>0.1</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="config-section">
-                            <h4 class="config-section-title">Traffic Allocation</h4>
-                            <div class="config-grid">
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label for="trafficFlow" class="input-label">Traffic flow (%)</label>
-                                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about traffic flow">
-                                            <span class="tooltip">Percentage of daily visitors who will be part of the experiment.</span>
-                                        </span>
-                                    </div>
-                                    <div class="range-group">
-                                        <input type="range" id="trafficFlowRange" class="range-field" min="1" max="100" value="100">
-                                        <div class="range-values">
-                                            <span>1%</span>
-                                            <input type="number" id="trafficFlow" class="input-field short-number-input" min="1" max="100" value="100">
-                                            <span>100%</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="input-group">
-                                    <div class="label-row">
-                                        <label for="buffer" class="input-label">Buffer (%)</label>
-                                        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about buffer">
-                                            <span class="tooltip">Extra samples to account for uncertainties.</span>
-                                        </span>
-                                    </div>
-                                    <div class="range-group">
-                                        <input type="range" id="bufferRange" class="range-field" min="0" max="300" value="0">
-                                        <div class="range-values">
-                                            <span>0%</span>
-                                            <input type="number" id="buffer" class="input-field short-number-input" min="0" max="100" value="0">
-                                            <span>300%</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label for="power" class="input-label">Statistical power (1-β)</label>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about statistical power">
+                                    <span class="tooltip">The probability of detecting an effect, if it exists.</span>
+                                </span>
                             </div>
-
-                            <div class="input-group">
-                                <div class="label-row">
-                                    <label class="input-label">Traffic distribution</label>
-                                    <button type="button" id="resetDistributionBtn" class="action-button">
-                                        reset
-                                    </button>
-                                </div>
-
-                                <div id="variantDistributionContainer" class="variant-distribution-container">
-                                    <!-- Variant sliders are inserted here by JavaScript -->
+                            <div class="range-group">
+                                <input type="range" id="powerRange" class="range-field" min="0.7" max="0.95" step="0.05" value="0.8">
+                                <div class="range-values">
+                                    <span>0.7</span>
+                                    <input type="number" id="power" class="input-field short-number-input" min="0.7" max="0.95" step="0.05" value="0.8">
+                                    <span>0.95</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="config-stack">
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label class="input-label">Test type</label>
+                            </div>
+                            <div class="radio-group-vertical">
+                                <label class="radio-label">
+                                    <input type="radio" name="testType" id="oneSided" value="one-sided" checked>
+                                    <span class="radio-text">One-sided</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about one-sided tests">
+                                        <span class="tooltip">Detects changes in one direction (e.g. improvements).</span>
+                                    </span>
+                                </label>
+
+                                <label class="radio-label">
+                                    <input type="radio" name="testType" id="twoSided" value="two-sided">
+                                    <span class="radio-text">Two-sided</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about two-sided tests">
+                                        <span class="tooltip">Detects changes in either direction (increases OR decreases).</span>
+                                    </span>
+                                </label>
+
+                                <label class="radio-label">
+                                    <input type="radio" name="testType" id="nonInferiority" value="non-inferiority">
+                                    <span class="radio-text">Non-inferiority</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about non-inferiority tests">
+                                        <span class="tooltip">Tests if the new variant is "not worse" than control by more than your margin.</span>
+                                    </span>
+                                </label>
+
+                                <label class="radio-label">
+                                    <input type="radio" name="testType" id="equivalence" value="equivalence">
+                                    <span class="radio-text">Equivalence</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about equivalence tests">
+                                        <span class="tooltip">Tests if two variants perform equivalently (within your margin).</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label for="correction" class="input-label">Multiple testing correction</label>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about multiple testing correction">
+                                    <span class="tooltip">Controls false positive rate when comparing multiple variants to control.</span>
+                                </span>
+                            </div>
+                            <div class="select-wrapper">
+                                <select id="correction" class="input-field">
+                                    <option value="none">None</option>
+                                    <option value="bonferroni">Bonferroni</option>
+                                    <option value="sidak">Šidák</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h4 class="config-section-title">Traffic Allocation</h4>
+                    <div class="config-grid">
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label for="trafficFlow" class="input-label">Traffic flow (%)</label>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about traffic flow">
+                                    <span class="tooltip">Percentage of daily visitors who will be part of the experiment.</span>
+                                </span>
+                            </div>
+                            <div class="range-group">
+                                <input type="range" id="trafficFlowRange" class="range-field" min="1" max="100" value="100">
+                                <div class="range-values">
+                                    <span>1%</span>
+                                    <input type="number" id="trafficFlow" class="input-field short-number-input" min="1" max="100" value="100">
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <div class="label-row">
+                                <label for="buffer" class="input-label">Buffer (%)</label>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about buffer">
+                                    <span class="tooltip">Extra samples to account for uncertainties.</span>
+                                </span>
+                            </div>
+                            <div class="range-group">
+                                <input type="range" id="bufferRange" class="range-field" min="0" max="300" value="0">
+                                <div class="range-values">
+                                    <span>0%</span>
+                                    <input type="number" id="buffer" class="input-field short-number-input" min="0" max="300" value="0">
+                                    <span>300%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <div class="label-row">
+                            <label class="input-label">Traffic distribution</label>
+                            <button type="button" id="resetDistributionBtn" class="action-button">
+                                reset
+                            </button>
+                        </div>
+
+                        <div id="variantDistributionContainer" class="variant-distribution-container">
+                            <!-- Variant sliders are inserted here by JavaScript -->
+                        </div>
+                    </div>
                 </div>
             </div>
+        </aside>
+    </div>
 
-            <!-- Tips modal -->
-            <div id="testing-tips" class="modal-overlay">
-                <a href="#" class="modal-backdrop"></a>
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Óscar’s tips</h3>
-                        <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
-                    </div>
-                    <div class="modal-body">
-                        <ul class="tips-list">
-                            <li>Match "Daily visitors" to your test location: for homepage tests, count only homepage visitors, not all website visitors.</li>
-                            <li>Calculate "Current rate" specific to your test: for a homepage signup button, use "sign-ups from homepage ÷ homepage visitors".</li>
-                            <li>Run the experiment for at least a full week to account for day-of-week effects.</li>
-                            <li>Consider upcoming seasonal events or campaigns that might affect your metrics.</li>
-                            <li>Ending tests early is like judging a cake before it's fully baked: it leads to half-baked decisions. <a href="stop-early-stopping.osc.garden" class="external">Do not peek at significance levels!</a></li>
-                            <li>Document your hypotheses, setups, results, and learnings.</li>
-                            <li>The most valuable experiments are those that challenge your assumptions; successful tests confirm what works, but "failed" tests teach you more.</li>
-                        </ul>
-                    </div>
-                </div>
+    <!-- Tips modal -->
+    <div id="testing-tips" class="modal-overlay">
+        <a href="#" class="modal-backdrop"></a>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Óscar's tips</h3>
+                <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
             </div>
+            <div class="modal-body">
+                <ul class="tips-list">
+                    <li>Match "Daily visitors" to your test location: for homepage tests, count only homepage visitors, not all website visitors.</li>
+                    <li>Calculate "Current rate" specific to your test: for a homepage signup button, use "sign-ups from homepage ÷ homepage visitors".</li>
+                    <li>Run the experiment for at least a full week to account for day-of-week effects.</li>
+                    <li>Consider upcoming seasonal events or campaigns that might affect your metrics.</li>
+                    <li>Ending tests early is like judging a cake before it's fully baked: it leads to half-baked decisions. <a href="stop-early-stopping.osc.garden" class="external">Do not peek at significance levels!</a></li>
+                    <li>Document your hypotheses, setups, results, and learnings.</li>
+                    <li>The most valuable experiments are those that challenge your assumptions; successful tests confirm what works, but "failed" tests teach you more.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-            <!-- How It Works modal -->
-            <div id="how-it-works" class="modal-overlay">
-                <a href="#" class="modal-backdrop"></a>
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <h3 class="modal-title">How this works</h3>
-                        <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
-                    </div>
-                    <div class="modal-body">
-                        <h4>Context</h4>
-                        <p>Imagine you redesign a button aiming to increase sign-up rate. The only way to reliably tell whether the new design is better than the old one is to run an A/B test.</p>
+    <!-- How It Works modal -->
+    <div id="how-it-works" class="modal-overlay">
+        <a href="#" class="modal-backdrop"></a>
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">How this works</h3>
+                <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
+            </div>
+            <div class="modal-body">
+                <h4>Context</h4>
+                <p>Imagine you redesign a button aiming to increase sign-up rate. The only way to reliably tell whether the new design is better than the old one is to run an A/B test.</p>
 
-                        <p>A/B testing involves showing different versions of your product to different users and measuring which version performs better. Some users (usually half) will see the original version (A); others will see the new version (B). The original version is your "control" group—the baseline against which we'll compare the new version.</p>
+                <p>A/B testing involves showing different versions of your product to different users and measuring which version performs better. Some users (usually half) will see the original version (A); others will see the new version (B). The original version is your "control" group—the baseline against which we'll compare the new version.</p>
 
-                        <p>Let's say your current page converts at 5%, and you want to detect if the button redesign can improve that by 10% (to 5.5%). Is it enough to test with 100 visitors per variant? 1,000? 10,000? And how many days will that take?</p>
+                <p>Let's say your current page converts at 5%, and you want to detect if the button redesign can improve that by 10% (to 5.5%). Is it enough to test with 100 visitors per variant? 1,000? 10,000? And how many days will that take?</p>
 
-                        <p>If you don't collect enough data, you risk:</p>
-                        <ul>
-                            <li>Missing real improvements (failing to detect that the new version is actually better)</li>
-                            <li>Making decisions based on random fluctuations (thinking the new version is better when it's not)</li>
-                        </ul>
+                <p>If you don't collect enough data, you risk:</p>
+                <ul>
+                    <li>Missing real improvements (failing to detect that the new version is actually better)</li>
+                    <li>Making decisions based on random fluctuations (thinking the new version is better when it's not)</li>
+                </ul>
 
-                        <p>But collecting too much data means wasting time and resources.</p>
+                <p>But collecting too much data means wasting time and resources.</p>
 
-                        <p>This calculator helps you find that sweet spot where your experiment is large enough to be reliable, but no larger than necessary.</p>
+                <p>This calculator helps you find that sweet spot where your experiment is large enough to be reliable, but no larger than necessary.</p>
 
-                        <hr>
+                <hr>
 
-                        <h4>Behind the scenes</h4>
+                <h4>Behind the scenes</h4>
 
-                        <p>The calculator uses <a href="https://en.wikipedia.org/wiki/Two-proportion_Z-test" class="external">two-proportion z-tests</a> and calculates sample sizes using the standard power analysis formula:</p>
+                <p>The calculator uses <a href="https://en.wikipedia.org/wiki/Two-proportion_Z-test" class="external">two-proportion z-tests</a> and calculates sample sizes using the standard power analysis formula:</p>
 
-                        <div class="formula">
-                            <math display="block">
+                <div class="formula">
+                    <math display="block">
+                        <mrow>
+                            <mi>n</mi>
+                            <mo>=</mo>
+                            <mfrac>
                                 <mrow>
-                                    <mi>n</mi>
-                                    <mo>=</mo>
-                                    <mfrac>
+                                    <msup>
                                         <mrow>
-                                            <msup>
-                                                <mrow>
-                                                    <mo>(</mo>
-                                                    <msub>
-                                                        <mi>z</mi>
-                                                        <mi>α</mi>
-                                                    </msub>
-                                                    <mo>+</mo>
-                                                    <msub>
-                                                        <mi>z</mi>
-                                                        <mi>β</mi>
-                                                    </msub>
-                                                    <mo>)</mo>
-                                                </mrow>
-                                                <mn>2</mn>
-                                            </msup>
-                                            <mo>×</mo>
                                             <mo>(</mo>
                                             <msub>
-                                                <mi>σ</mi>
-                                                <mn>1</mn>
+                                                <mi>z</mi>
+                                                <mi>α</mi>
                                             </msub>
                                             <mo>+</mo>
                                             <msub>
-                                                <mi>σ</mi>
-                                                <mn>2</mn>
+                                                <mi>z</mi>
+                                                <mi>β</mi>
                                             </msub>
                                             <mo>)</mo>
                                         </mrow>
-                                        <mrow>
-                                            <msup>
-                                                <mi>Δ</mi>
-                                                <mn>2</mn>
-                                            </msup>
-                                        </mrow>
-                                    </mfrac>
+                                        <mn>2</mn>
+                                    </msup>
+                                    <mo>×</mo>
+                                    <mo>(</mo>
+                                    <msub>
+                                        <mi>σ</mi>
+                                        <mn>1</mn>
+                                    </msub>
+                                    <mo>+</mo>
+                                    <msub>
+                                        <mi>σ</mi>
+                                        <mn>2</mn>
+                                    </msub>
+                                    <mo>)</mo>
                                 </mrow>
-                            </math>
+                                <mrow>
+                                    <msup>
+                                        <mi>Δ</mi>
+                                        <mn>2</mn>
+                                    </msup>
+                                </mrow>
+                            </mfrac>
+                        </mrow>
+                    </math>
+                </div>
+
+                <h5>What Δ (Delta) Represents</h5>
+                <ul>
+                    <li><strong>One-sided & Two-sided:</strong> Δ = <em>Minimum Detectable Effect</em> (the improvement you want to detect)</li>
+                    <li><strong>Non-inferiority:</strong> Δ = <em>Non-inferiority margin (δ)</em>: maximum acceptable loss in performance</li>
+                    <li><strong>Equivalence:</strong> Δ = <em>Equivalence margin (δ)</em>: "practically equivalent" range</li>
+                </ul>
+
+                <h5>Critical Values by test type</h5>
+                <div class="test-type-grid">
+                    <div class="test-type-card">
+                        <h6>One-sided</h6>
+                        <div class="formula-row">
+                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
                         </div>
+                        <small>Expects different performance between groups</small>
+                    </div>
 
-                        <h5>What Δ (Delta) Represents</h5>
-                        <ul>
-                            <li><strong>One-sided & Two-sided:</strong> Δ = <em>Minimum Detectable Effect</em> (the improvement you want to detect)</li>
-                            <li><strong>Non-inferiority:</strong> Δ = <em>Non-inferiority margin (δ)</em>: maximum acceptable loss in performance</li>
-                            <li><strong>Equivalence:</strong> Δ = <em>Equivalence margin (δ)</em>: "practically equivalent" range</li>
-                        </ul>
-
-                        <h5>Critical Values by test type</h5>
-                        <div class="test-type-grid">
-                            <div class="test-type-card">
-                                <h6>One-sided</h6>
-                                <div class="formula-row">
-                                    <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
-                                    <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
-                                </div>
-                                <small>Expects different performance between groups</small>
-                            </div>
-
-                            <div class="test-type-card">
-                                <h6>Two-sided</h6>
-                                <div class="formula-row">
-                                    <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
-                                    <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
-                                </div>
-                                <small>Expects different performance between groups</small>
-                            </div>
-
-                            <div class="test-type-card">
-                                <h6>Non-inferiority</h6>
-                                <div class="formula-row">
-                                    <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
-                                    <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
-                                </div>
-                                <small>Assumes same baseline rate for both groups</small>
-                            </div>
-
-                            <div class="test-type-card">
-                                <h6>Equivalence</h6>
-                                <div class="formula-row">
-                                    <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
-                                    <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mo>(</mo><mn>1</mn><mo>+</mo><mi>power</mi><mo>)</mo><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
-                                </div>
-                                <small>Assumes same baseline rate for both groups</small>
-                            </div>
+                    <div class="test-type-card">
+                        <h6>Two-sided</h6>
+                        <div class="formula-row">
+                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
                         </div>
+                        <small>Expects different performance between groups</small>
+                    </div>
 
-                        <p>The calculator uses <a href="https://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/" class="external" rel="noopener noreferrer">Acklam's algorithm</a> to compute inverse normal values (Φ⁻¹). Test duration is calculated by dividing required sample size by daily visitor flow.</p>
+                    <div class="test-type-card">
+                        <h6>Non-inferiority</h6>
+                        <div class="formula-row">
+                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
+                        </div>
+                        <small>Assumes same baseline rate for both groups</small>
+                    </div>
 
-                        <hr>
-
-                        <p>All calculations are done locally; your data never leaves your device.</p>
-
-                        <p>The calculator has been tested by comparing its results to that of established statistical packages in Python (<a href="https://docs.scipy.org/doc/scipy/reference/stats.html" class="external" rel="noopener noreferrer">stats</a> from <a href="https://scipy.org/" class="external" rel="noopener noreferrer">scipy</a>). You can verify your device returns the expected numbers, within a 1% margin of error, by adding <a href="?test">?test</a> to this calculator's URL.</p>
+                    <div class="test-type-card">
+                        <h6>Equivalence</h6>
+                        <div class="formula-row">
+                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mo>(</mo><mn>1</mn><mo>+</mo><mi>power</mi><mo>)</mo><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
+                        </div>
+                        <small>Assumes same baseline rate for both groups</small>
                     </div>
                 </div>
-            </div>
 
-        </main>
+                <p>The calculator uses <a href="https://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/" class="external" rel="noopener noreferrer">Acklam's algorithm</a> to compute inverse normal values (Φ⁻¹). Test duration is calculated by dividing required sample size by daily visitor flow.</p>
 
-        <footer class="app-footer" role="contentinfo">
-            <div class="footer-content">
-                <p class="footer-text">
-                    <span>Made with <span class="heart">♥</span> by <a href="https://osc.garden" class="footer-link" rel="author" lang="es">Óscar</a></span>
-                    <span class="separator" aria-hidden="true">•</span>
-                    <a href="#testing-tips" class="footer-link">Tips</a>
-                    <span class="separator" aria-hidden="true">•</span>
-                    <a href="#how-it-works" class="footer-link">How it works</a>
-                    <span class="separator" aria-hidden="true">•</span>
-                    <a href="https://github.com/welpo/ab-test-calculator" class="footer-link" rel="source">View source code</a>
-                </p>
+                <hr>
+
+                <p>All calculations are done locally; your data never leaves your device.</p>
+
+                <p>The calculator has been tested by comparing its results to that of established statistical packages in Python (<a href="https://docs.scipy.org/doc/scipy/reference/stats.html" class="external" rel="noopener noreferrer">stats</a> from <a href="https://scipy.org/" class="external" rel="noopener noreferrer">scipy</a>). You can verify your device returns the expected numbers, within a 1% margin of error, by adding <a href="?test">?test</a> to this calculator's URL.</p>
             </div>
-        </footer>
+        </div>
     </div>
 
-    <script defer src="app.js?h=a55c9542"></script>
-    <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
+</main>
+
+<footer class="app-footer" role="contentinfo">
+    <div class="footer-content">
+        <p class="footer-text">
+            <span>Made with <span class="heart">♥</span> by <a href="https://osc.garden" class="footer-link" rel="author" lang="es">Óscar</a></span>
+            <span class="separator" aria-hidden="true">•</span>
+            <a href="#testing-tips" class="footer-link">Tips</a>
+            <span class="separator" aria-hidden="true">•</span>
+            <a href="#how-it-works" class="footer-link">How it works</a>
+            <span class="separator" aria-hidden="true">•</span>
+            <a href="https://github.com/welpo/ab-test-calculator" class="footer-link" rel="source">View source code</a>
+        </p>
+    </div>
+</footer>
+</div>
+
+<script defer src="app.js?h=a55c9542"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

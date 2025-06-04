@@ -106,6 +106,46 @@ body {
     min-width: var(--container-width);
 }
 
+.main-layout-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 0 auto;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius);
+    background-color: var(--color-bg);
+    padding: var(--spacing-md);
+    max-width: var(--container-width);
+}
+
+.main-layout-container.settings-shown {
+    --container-width: 1000px;
+    max-width: var(--container-width);
+}
+
+.content-wrapper {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.calculator-content {
+    flex: 2;
+    min-width: 0;
+}
+
+.settings-header {
+    margin-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-sm);
+}
+
+.settings-title {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: var(--font-size-md);
+}
+
+
 .header-container {
     text-align: center;
 }
@@ -142,9 +182,7 @@ body {
 }
 
 .tools-nav a.active {
-    box-shadow: var(--shadow-sm);
     background-color: var(--color-bg);
-    color: var(--accent);
 }
 
 .tools-nav a.active:hover {
@@ -192,7 +230,7 @@ header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 0;
     text-align: center;
 }
 
@@ -213,6 +251,7 @@ header {
 }
 
 .calculator-subtitle {
+    margin-bottom: var(--spacing-sm);
     color: var(--color-text-light);
     font-size: var(--font-size-sm);
 }
@@ -306,7 +345,8 @@ header {
 .tooltip-container:has(.advanced-header.no-modifications) .rich-tooltip {
     display: none;
 }
-.advanced-header.no-modifications + .rich-tooltip {
+
+.advanced-header.no-modifications+.rich-tooltip {
     display: none;
 }
 
@@ -473,7 +513,6 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     display: flex;
     position: relative;
     align-items: center;
-    cursor: pointer;
     font-size: var(--font-size-sm);
     user-select: none;
 }
@@ -501,7 +540,7 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    padding: 8px 0;
+    padding: 0;
 }
 
 .radio-group-vertical input[type="radio"] {
@@ -861,6 +900,8 @@ select.input-field {
     position: fixed;
     top: 0;
     left: 0;
+    z-index: -1;
+    cursor: pointer;
     width: 100%;
     height: 100%;
 }
@@ -1080,6 +1121,12 @@ a:hover {
 .config-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.config-stack {
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-md);
 }
 
@@ -1642,10 +1689,115 @@ input[type="range"]::-moz-range-thumb {
     .tab-content {
         white-space: normal;
     }
-}
 
-@media (hover: none) {
     .rich-tooltip {
         display: none !important;
+    }
+}
+
+.settings-checkbox {
+    display: none;
+}
+
+/* Settings close button styling */
+.settings-close {
+    cursor: pointer;
+    color: var(--color-text-light);
+    font-size: 1.5rem;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.settings-close:hover {
+    color: var(--color-text);
+}
+
+/* Default: Settings panel hidden */
+.settings-panel {
+    display: none;
+}
+
+/* When checkbox is checked: Show settings panel */
+.settings-checkbox:checked ~ .main-layout-container .settings-panel {
+    display: block;
+}
+
+/* When checkbox is checked: Expand container */
+.settings-checkbox:checked ~ .main-layout-container {
+    max-width: 1200px;
+}
+
+/* When checkbox is checked: Visual feedback on toggle button */
+.settings-checkbox:checked ~ .main-layout-container .advanced-header {
+    transform: rotate(180deg);
+    background-color: var(--color-accent-light);
+}
+
+/* Mobile: Modal behavior when checkbox is checked */
+@media (max-width: 1023px) {
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel {
+        display: flex;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        z-index: 1000;
+        background: var(--color-overlay);
+        padding: 2rem 1rem;
+    }
+
+    .settings-checkbox:checked ~ .main-layout-container .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-header,
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-content {
+        position: relative;
+        z-index: 1;
+        margin: 0 auto;
+        background: var(--color-bg);
+        padding: var(--spacing-md);
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-header {
+        border-bottom: 1px solid var(--color-border);
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        padding-bottom: var(--spacing-sm);
+    }
+
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-content {
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    .settings-close {
+        display: block;
+    }
+}
+
+/* Desktop: Side panel behavior when checkbox is checked */
+@media (min-width: 1024px) {
+    .settings-checkbox:checked ~ .main-layout-container .settings-panel {
+        display: block;
+        flex: 1;
+        border-radius: var(--border-radius);
+        background-color: var(--color-bg-light);
+        padding: var(--spacing-md);
+        min-width: 300px;
+        max-width: 400px;
+        height: fit-content;
+    }
+
+    .settings-close {
+        display: none;
     }
 }
