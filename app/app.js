@@ -1137,20 +1137,75 @@ document.addEventListener("DOMContentLoaded", function () {
     const unbufferedSampleSize =
       sampleSizePerVariant / (1 + params.buffer / 100);
     const baselineRate = params.baseline / 100;
-    const control_std = Math.sqrt(baselineRate * (1 - baselineRate));
-    const zAlpha =
-      params.testType === "one-sided"
-        ? normSInv(1.0 - params.alpha)
-        : normSInv(1.0 - params.alpha / 2.0);
-    const zBeta = normSInv(params.power);
-    const z_value = zAlpha + zBeta;
-    const mde_proportion =
-      z_value * control_std * Math.sqrt(2 / unbufferedSampleSize);
+    let adjustedAlpha = params.alpha;
+    if (params.variantCount > 2) {
+      const m = params.variantCount - 1;
+      switch (params.correctionMethod) {
+        case "bonferroni":
+          adjustedAlpha = params.alpha / m;
+          break;
+        case "sidak":
+          adjustedAlpha = 1.0 - Math.pow(1.0 - params.alpha, 1.0 / m);
+          break;
+        default:
+          adjustedAlpha = params.alpha;
+      }
+    }
+    let mde_proportion;
+    // One-sided and two-sided tests require a quadratic solver.
+    if (params.testType === "one-sided" || params.testType === "two-sided") {
+      let zAlpha, zBeta;
+      if (params.testType === "one-sided") {
+        zAlpha = normSInv(1.0 - adjustedAlpha);
+        zBeta = normSInv(params.power);
+      } else {
+        // two-sided
+        zAlpha = normSInv(1.0 - adjustedAlpha / 2.0);
+        zBeta = normSInv(params.power);
+      }
+      const Z2 = Math.pow(zAlpha + zBeta, 2);
+      const n = unbufferedSampleSize;
+      const p = baselineRate;
+      // Coefficients for the quadratic equation: ax^2 + bx + c = 0
+      const a = n + Z2;
+      const b = Z2 * (2 * p - 1);
+      const c = -2 * Z2 * p * (1 - p);
+      mde_proportion = solveQuadratic(a, b, c);
+    } else {
+      let zAlpha, zBeta;
+      if (params.testType === "equivalence") {
+        zAlpha = normSInv(1.0 - adjustedAlpha);
+        zBeta = normSInv((1.0 + params.power) / 2.0);
+      } else {
+        // non-inferiority
+        zAlpha = normSInv(1.0 - adjustedAlpha);
+        zBeta = normSInv(params.power);
+      }
+      const control_std = Math.sqrt(baselineRate * (1 - baselineRate));
+      const z_value = zAlpha + zBeta;
+      mde_proportion =
+        z_value * control_std * Math.sqrt(2 / unbufferedSampleSize);
+    }
+    if (mde_proportion === null) {
+      return NaN;
+    }
     if (params.isRelativeMode) {
       return (mde_proportion / baselineRate) * 100;
     } else {
       return mde_proportion * 100;
     }
+  }
+
+  function solveQuadratic(a, b, c) {
+    const discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) {
+      return null;
+    }
+    const root1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+    const root2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+    if (root1 > 0) return root1;
+    if (root2 > 0) return root2;
+    return null;
   }
 
   function updateMDEToTimeTable() {
