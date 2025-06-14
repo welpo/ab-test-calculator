@@ -265,7 +265,7 @@
             <label for="settings-checkbox" class="modal-backdrop"></label>
             <div class="settings-header">
                 <h3 class="settings-title">Advanced configuration</h3>
-                <label for="settings-checkbox" class="settings-close mobile-only">&times;</label>
+                <label for="settings-checkbox" class="settings-close mobile-only">×</label>
             </div>
             <div class="settings-content">
                 <div class="config-section">
@@ -425,7 +425,7 @@
         <div class="modal-container">
             <div class="modal-header">
                 <h3 class="modal-title">Óscar's tips</h3>
-                <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
+                <a href="#" class="modal-close" title="Close" aria-label="Close">×</a>
             </div>
             <div class="modal-body">
                 <ul class="tips-list">
@@ -447,7 +447,7 @@
         <div class="modal-container">
             <div class="modal-header">
                 <h3 class="modal-title">How this works</h3>
-                <a href="#" class="modal-close" title="Close" aria-label="Close">&times;</a>
+                <a href="#" class="modal-close" title="Close" aria-label="Close">×</a>
             </div>
             <div class="modal-body">
                 <h4>Context</h4>
@@ -456,22 +456,12 @@
                 <p>A/B testing involves showing different versions of your product to different users and measuring which version performs better. Some users (usually half) will see the original version (A); others will see the new version (B). The original version is your "control" group—the baseline against which we'll compare the new version.</p>
 
                 <p>Let's say your current page converts at 5%, and you want to detect if the button redesign can improve that by 10% (to 5.5%). Is it enough to test with 100 visitors per variant? 1,000? 10,000? And how many days will that take?</p>
-
-                <p>If you don't collect enough data, you risk:</p>
-                <ul>
-                    <li>Missing real improvements (failing to detect that the new version is actually better)</li>
-                    <li>Making decisions based on random fluctuations (thinking the new version is better when it's not)</li>
-                </ul>
-
-                <p>But collecting too much data means wasting time and resources.</p>
-
-                <p>This calculator helps you find that sweet spot where your experiment is large enough to be reliable, but no larger than necessary.</p>
+                <p>If you don't collect enough data, you risk making decisions based on random fluctuations. But collecting too much data means wasting time and resources. This calculator helps you find the sweet spot.</p>
 
                 <hr>
 
                 <h4>Behind the scenes</h4>
-
-                <p>The calculator uses <a href="https://en.wikipedia.org/wiki/Two-proportion_Z-test" class="external">two-proportion z-tests</a> and calculates sample sizes using the standard power analysis formula:</p>
+                <p>This calculator is built on the principles of power analysis for <a href="https://en.wikipedia.org/wiki/Two-proportion_Z-test" class="external">two-proportion z-tests</a>. It uses the following standard formula to determine the required sample size (n) per variant.</p>
 
                 <div class="formula">
                     <math display="block">
@@ -485,28 +475,30 @@
                                             <mo>(</mo>
                                             <msub>
                                                 <mi>z</mi>
-                                                <mi>α</mi>
+                                                <mrow><mn>1</mn><mo>-</mo><mi>α</mi></mrow>
                                             </msub>
                                             <mo>+</mo>
                                             <msub>
                                                 <mi>z</mi>
-                                                <mi>β</mi>
+                                                <mrow><mn>1</mn><mo>-</mo><mi>β</mi></mrow>
                                             </msub>
                                             <mo>)</mo>
                                         </mrow>
                                         <mn>2</mn>
                                     </msup>
-                                    <mo>×</mo>
+                                    <mo>⁢</mo>
                                     <mo>(</mo>
-                                    <msub>
+                                    <msubsup>
                                         <mi>σ</mi>
                                         <mn>1</mn>
-                                    </msub>
+                                        <mn>2</mn>
+                                    </msubsup>
                                     <mo>+</mo>
-                                    <msub>
+                                    <msubsup>
                                         <mi>σ</mi>
                                         <mn>2</mn>
-                                    </msub>
+                                        <mn>2</mn>
+                                    </msubsup>
                                     <mo>)</mo>
                                 </mrow>
                                 <mrow>
@@ -520,12 +512,9 @@
                     </math>
                 </div>
 
-                <h5>What Δ (Delta) Represents</h5>
-                <ul>
-                    <li><strong>One-sided & Two-sided:</strong> Δ = <em>Minimum Detectable Effect</em> (the improvement you want to detect)</li>
-                    <li><strong>Non-inferiority:</strong> Δ = <em>Non-inferiority margin (δ)</em>: maximum acceptable loss in performance</li>
-                    <li><strong>Equivalence:</strong> Δ = <em>Equivalence margin (δ)</em>: "practically equivalent" range</li>
-                </ul>
+                <p>Where <strong>Δ</strong> is the absolute effect size, <strong>z</strong> values correspond to statistical power and significance, and <strong>σ²</strong> is the variance for each group. Variance is calculated as <math display="inline"><msup><mi>σ</mi><mn>2</mn></msup><mo>=</mo><mi>p</mi><mo>(</mo><mn>1</mn><mo>-</mo><mi>p</mi><mo>)</mo></math>, where <em>p</em> is the conversion rate.</p>
+
+                <hr>
 
                 <h5>Critical Values by test type</h5>
                 <div class="test-type-grid">
@@ -541,8 +530,8 @@
                     <div class="test-type-card">
                         <h6>Two-sided</h6>
                         <div class="formula-row">
-                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
-                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>α</mi><mo>/</mo><mn>2</mn></mrow></msub></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>β</mi></mrow></msub></math></p>
                         </div>
                         <small>Expects different performance between groups</small>
                     </div>
@@ -550,8 +539,8 @@
                     <div class="test-type-card">
                         <h6>Non-inferiority</h6>
                         <div class="formula-row">
-                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
-                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>α</mi></mrow></msub></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>β</mi></mrow></msub></math></p>
                         </div>
                         <small>Assumes same baseline rate for both groups</small>
                     </div>
@@ -559,20 +548,18 @@
                     <div class="test-type-card">
                         <h6>Equivalence</h6>
                         <div class="formula-row">
-                            <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
-                            <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mo>(</mo><mn>1</mn><mo>+</mo><mi>power</mi><mo>)</mo><mo>/</mo><mn>2</mn><mo>)</mo></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>α</mi></mrow></msub></math></p>
+                            <p><math display="inline"><msub><mi>z</mi><mrow><mo>(</mo><mn>1</mn><mo>+</mo><mi>power</mi><mo>)</mo><mo>/</mo><mn>2</mn></mrow></msub></math></p>
                         </div>
                         <small>Assumes same baseline rate for both groups</small>
                     </div>
                 </div>
 
-                <p>The calculator uses <a href="https://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/" class="external" rel="noopener noreferrer">Acklam's algorithm</a> to compute inverse normal values (Φ⁻¹). Test duration is calculated by dividing required sample size by daily visitor flow.</p>
+                <hr>
 
                 <hr>
 
-                <p>All calculations are done locally; your data never leaves your device.</p>
-
-                <p>The calculator has been tested by comparing its results to that of established statistical packages in Python (<a href="https://docs.scipy.org/doc/scipy/reference/stats.html" class="external" rel="noopener noreferrer">stats</a> from <a href="https://scipy.org/" class="external" rel="noopener noreferrer">scipy</a>). You can verify your device returns the expected numbers, within a 1% margin of error, by adding <a href="?test">?test</a> to this calculator's URL.</p>
+                <p>All calculations are done locally; your data never leaves your device. The calculator uses <a href="https://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/" class="external" rel="noopener noreferrer">Acklam's algorithm</a> to compute inverse normal values. You can verify your device returns expected numbers by adding <a href="?test">?test</a> to this calculator's URL.</p>
             </div>
         </div>
     </div>
@@ -594,7 +581,7 @@
 </footer>
 </div>
 
-<script defer src="app.js?h=a55c9542"></script>
+<script defer src="app.js?h=9ca5e2bf"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

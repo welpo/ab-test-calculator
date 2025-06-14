@@ -1973,7 +1973,7 @@ const testCases = [
     expectedSampleSize: 17064,
     status: "success",
   },
-{
+  {
     name: "Basic equivalence",
     baseline: 0.1,
     relativeEffectSize: 0.1,
@@ -2105,6 +2105,124 @@ const testCases = [
   },
 ];
 
+// Test that MDE -> SampleSize -> MDE returns the original MDE.
+const symmetryTestCases = [
+  {
+    name: "Symmetry: Standard Two-Sided",
+    baseline: 5.0,
+    mde: 10.0,
+    isRelative: true,
+    testType: "two-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: Absolute MDE",
+    baseline: 2.5,
+    mde: 0.5,
+    isRelative: false,
+    testType: "two-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: High Power One-Sided",
+    baseline: 20.0,
+    mde: 5.0,
+    isRelative: true,
+    testType: "one-sided",
+    alpha: 0.05,
+    power: 0.95,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: Equivalence, Bonferroni",
+    baseline: 10.0,
+    mde: 1.5,
+    isRelative: false,
+    testType: "equivalence",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 4,
+    correction: "bonferroni",
+  },
+  {
+    name: "Symmetry: Non-Inferiority, Sidak",
+    baseline: 15.0,
+    mde: 4.0,
+    isRelative: true,
+    testType: "non-inferiority",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 3,
+    correction: "sidak",
+  },
+  {
+    name: "Symmetry: One-Sided, Absolute MDE",
+    baseline: 8.0,
+    mde: 0.75,
+    isRelative: false,
+    testType: "one-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: Equivalence, Relative MDE (2 Variants)",
+    baseline: 40.0,
+    mde: 2.0,
+    isRelative: true,
+    testType: "equivalence",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: Non-Inferiority, Absolute Margin",
+    baseline: 50.0,
+    mde: 0.5,
+    isRelative: false,
+    testType: "non-inferiority",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 3,
+    correction: "bonferroni",
+  },
+  {
+    name: "Symmetry: Multi-Variant, No Correction",
+    baseline: 12.0,
+    mde: 8.0,
+    isRelative: true,
+    testType: "two-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 5,
+    correction: "none",
+  },
+  {
+    name: "Symmetry: Edge Case - Very Low Baseline",
+    baseline: 0.2,
+    mde: 50.0,
+    isRelative: true,
+    testType: "two-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+  {
+    name: "Symmetry: Edge Case - Very High Baseline",
+    baseline: 95.0,
+    mde: 1.0,
+    isRelative: true,
+    testType: "one-sided",
+    alpha: 0.05,
+    power: 0.8,
+    variantCount: 2,
+  },
+];
+
 async function runDirectTest(testCase) {
   debugLog(`Running test: ${testCase.name}`, "header");
 
@@ -2152,6 +2270,64 @@ async function runDirectTest(testCase) {
   }
 }
 
+async function runSymmetryTest(testCase) {
+  debugLog(`Test: ${testCase.name}`, "subheader");
+  const originalGetParams = window.getCalculationParameters;
+  window.getCalculationParameters = () => ({
+    baseline: testCase.baseline,
+    mde: testCase.mde,
+    variantCount: testCase.variantCount,
+    alpha: testCase.alpha,
+    power: testCase.power,
+    testType: testCase.testType,
+    buffer: 0,
+    isRelativeMode: testCase.isRelative,
+    correctionMethod: testCase.correction || "none",
+  });
+  try {
+    const mdeInfo = calculateMDE(
+      testCase.baseline,
+      testCase.mde,
+      testCase.isRelative
+    );
+    const preciseSampleSize = calculateSampleSize(
+      mdeInfo.baselineRate,
+      mdeInfo.relMDE,
+      testCase.alpha,
+      testCase.power,
+      testCase.variantCount,
+      0,
+      testCase.testType,
+      testCase.correction || "none"
+    );
+    const recoveredMde = calculateMDEFromSampleSize(preciseSampleSize);
+    if (areClose(testCase.mde, recoveredMde)) {
+      debugLog(
+        `Test passed - Original MDE: ${testCase.mde.toFixed(
+          2
+        )}, Recovered: ${recoveredMde.toFixed(2)}`,
+        "pass"
+      );
+      passedTests++;
+    } else {
+      debugLog(
+        `Test failed - Original MDE: ${testCase.mde.toFixed(
+          2
+        )}, Recovered: ${recoveredMde.toFixed(2)}`,
+        "fail"
+      );
+      failedTests++;
+      failedTestNames.push(`Symmetry: ${testCase.name}`);
+    }
+  } catch (error) {
+    debugLog(`Test error: ${error.message}`, "fail");
+    failedTests++;
+    failedTestNames.push(`Symmetry: ${testCase.name} (Error)`);
+  } finally {
+    window.getCalculationParameters = originalGetParams;
+  }
+}
+
 async function runAllTests() {
   debugLog("Running tests…", "header");
   passedTests = 0;
@@ -2160,7 +2336,11 @@ async function runAllTests() {
   for (const testCase of testCases) {
     await runDirectTest(testCase);
   }
-  const totalTests = testCases.length;
+  debugLog("Running symmetry (bi-directionality) tests...", "header");
+  for (const testCase of symmetryTestCases) {
+    await runSymmetryTest(testCase);
+  }
+  const totalTests = testCases.length + symmetryTestCases.length;
   debugLog(
     `${passedTests}/${totalTests} tests passed (${Math.round(
       (passedTests / totalTests) * 100
