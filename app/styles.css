@@ -788,35 +788,52 @@ select.input-field {
     display: block;
 }
 
-/* ========== DETAILS LINKS ========== */
-.calculator-links {
+/* ========== SHARE CARD STYLES ========== */
+.share-card {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--spacing-sm);
-}
-
-.button {
-    transition: background-color 0.2s;
-    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 auto;
     border: 1px solid var(--color-border);
-    border-radius: 100px;
+    border-radius: var(--border-radius);
     background: var(--color-bg-light);
-    padding: 0.4rem 0.8rem;
-    color: var(--accent);
+    max-width: 320px;
+    text-align: center;
+}
+
+/* ========== EXPERIMENT NAME STYLES ========== */
+.experiment-name-input {
+    transition: all 0.2s ease;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: transparent;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    color: var(--color-text);
     font-size: var(--font-size-sm);
-    text-decoration: none;
+    text-align: center;
 }
 
-.calculator-link.expanded {
+.experiment-name-input::placeholder {
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+.experiment-name-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-light);
+    border-style: solid;
     border-color: var(--accent);
+    background-color: var(--color-bg);
 }
 
-.button:hover {
-    border-color: var(--accent);
-    background-color: var(--color-bg-lighter);
+.experiment-name-input:not(:placeholder-shown) {
+    border-style: solid;
+    background-color: var(--color-bg);
+    font-weight: 500;
 }
 
+/* ========== SHARE BUTTON STYLES ========== */
 .share-button {
     display: inline-flex;
     position: relative;
@@ -1645,6 +1662,14 @@ input[type="range"]::-moz-range-thumb {
 
     .advanced-header {
         position: static;
+    }
+
+    .experiment-name-container {
+        margin-top: var(--spacing-sm);
+        max-width: 100%;
+    }
+    .experiment-name-input {
+        font-size: var(--font-size-xs);
     }
 
     .app-container {

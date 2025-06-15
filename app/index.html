@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=3398a553">
+    <link rel="stylesheet" href="styles.css?h=a1ebf273">
 </head>
 
 <body>
@@ -248,9 +248,14 @@
                 </div>
             </div>
 
-            <!-- Detail links -->
-            <div class="calculator-links">
-                <!-- Share -->
+            <div class="share-card">
+                <input type="text"
+                    id="experimentName"
+                    class="experiment-name-input"
+                    placeholder="Experiment name (optional)"
+                    maxlength="100"
+                    aria-label="Experiment name">
+
                 <a id="sharePlan" class="share-button">
                     <svg id="link" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -388,7 +393,7 @@
                             <div class="label-row">
                                 <label for="buffer" class="input-label">Buffer (%)</label>
                                 <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about buffer">
-                                    <span class="tooltip">Extra samples to account for uncertainties.</span>
+                                    <span class="tooltip">Extra samples to account for uncertainties. E.g. a value of 20% increases experiment duration by 20%.</span>
                                 </span>
                             </div>
                             <div class="range-group">
@@ -581,7 +586,7 @@
 </footer>
 </div>
 
-<script defer src="app.js?h=9ca5e2bf"></script>
+<script defer src="app.js?h=be08b280"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

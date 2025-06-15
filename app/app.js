@@ -202,6 +202,8 @@ const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
 const downloadTimeCSVBtn = document.getElementById("downloadTimeCSVBtn");
+const experimentNameInput = document.getElementById("experimentName");
+const originalTitle = "A/B Test Sample Size & Duration Calculator";
 
 initializeUI();
 
@@ -769,11 +771,15 @@ function getTestTypeExplanation(
     }
     return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove the new rate is not worse than <span class="highlight">${worstAcceptable.toFixed(
       2
-    )}%</span> (baseline: <span id="fromValue">${fromValue}</span>%, margin: <span class="highlight">${relativeChange}</span>).`;
+    )}%</span> (baseline: <span id="fromValue">${fromValue}</span>%, margin: <span>${relativeChange}</span>).`;
   }
   switch (testType) {
     case "two-sided":
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> change in either direction (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
+      const lowerValue = (
+        parseFloat(fromValue) -
+        Math.abs(parseFloat(toValue) - parseFloat(fromValue))
+      ).toFixed(2);
+      return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> change in either direction (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>% or to <span>${lowerValue}</span>%).`;
     case "one-sided":
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
     case "equivalence":
@@ -1459,6 +1465,10 @@ function encodeParametersToURL() {
     cr: correctionSelect.value,
     vs: visitorsInput.value,
   };
+  const experimentName = document.getElementById("experimentName").value.trim();
+  if (experimentName) {
+    params.name = experimentName;
+  }
   if (tabSingle.checked) {
     params.tab = "single";
   } else if (tabTable.checked) {
@@ -1503,6 +1513,27 @@ function encodeParametersToURL() {
   return `${window.location.origin}${window.location.pathname}?${queryString}`;
 }
 
+experimentNameInput.addEventListener("input", function () {
+  updateDocumentTitle();
+});
+function updateDocumentTitle() {
+  const experimentName = experimentNameInput.value.trim();
+  if (experimentName) {
+    document.title = `${experimentName} - ${originalTitle}`;
+  } else {
+    document.title = originalTitle;
+  }
+}
+
+function getExperimentName() {
+  return experimentNameInput.value.trim();
+}
+
+function setExperimentName(name) {
+  experimentNameInput.value = name || "";
+  updateDocumentTitle();
+}
+
 shareButton.addEventListener("click", handleShareButtonClick);
 function handleShareButtonClick() {
   const url = encodeParametersToURL();
@@ -1527,6 +1558,9 @@ function handleShareButtonClick() {
 function decodeParametersFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.size === 0) return false;
+  if (urlParams.has("name")) {
+    setExperimentName(urlParams.get("name"));
+  }
   if (urlParams.has("bl")) baselineInput.value = urlParams.get("bl");
   if (urlParams.has("mde")) mdeInput.value = urlParams.get("mde");
   if (urlParams.has("rel")) {
