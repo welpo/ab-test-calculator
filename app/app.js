@@ -623,7 +623,8 @@ function updateCalculation() {
   const mdeResults = calculateMDE(
     params.baseline,
     params.mde,
-    params.isRelativeMode
+    params.isRelativeMode,
+    params.testType,
   );
   const sampleSizePerVariant = calculateSampleSize(
     mdeResults.baselineRate,
@@ -1046,7 +1047,8 @@ function calculateMdeResults(mdeValue) {
   const mdeResults = calculateMDE(
     params.baseline,
     mdeValue,
-    params.isRelativeMode
+    params.isRelativeMode,
+    params.testType,
   );
   const sampleSize = calculateSampleSize(
     mdeResults.baselineRate,
@@ -1090,7 +1092,7 @@ function getCalculationParameters() {
   };
 }
 
-function calculateMDE(baseline, mdeValue, isRelativeMode) {
+function calculateMDE(baseline, mdeValue, isRelativeMode, testType) {
   const baselineRate = baseline / 100;
   let relMDE;
   if (isRelativeMode) {
@@ -1098,12 +1100,12 @@ function calculateMDE(baseline, mdeValue, isRelativeMode) {
   } else {
     relMDE = mdeValue / baseline;
   }
-  let targetRate;
-  if (isRelativeMode) {
-    targetRate = baselineRate * (1 + relMDE);
-  } else {
-    targetRate = baselineRate + mdeValue / 100;
-  }
+  const targetRate = calculateTargetRate(
+    baselineRate,
+    mdeValue,
+    isRelativeMode,
+    testType
+  );
   return {
     baselineRate,
     relMDE,
@@ -1381,21 +1383,45 @@ function calculateTimeResults(days) {
     const variantDailyVisitors = effectiveVisitors / params.variantCount;
     visitorsPerVariant = days * variantDailyVisitors;
   }
-  const baselineRate = params.baseline / 100;
-  let targetRate;
-  if (params.isRelativeMode) {
-    targetRate = baselineRate * (1 + mde / 100);
-  } else {
-    targetRate = baselineRate + mde / 100;
-  }
+  const targetRate = calculateTargetRate(
+    params.baseline,
+    mde,
+    params.isRelativeMode,
+    params.testType
+  );
   return {
     baseline: params.baseline,
-    targetRate: targetRate * 100,
+    targetRate: targetRate,
     mde: mde,
     isRelative: params.isRelativeMode,
     visitorsPerVariant: visitorsPerVariant,
   };
 }
+
+function calculateTargetRate(baseline, mde, isRelativeMode, testType) {
+  const baselineRate = baseline / 100;
+  const isBoundTest =
+    testType === "non-inferiority" || testType === "equivalence";
+  let finalRate;
+  if (isRelativeMode) {
+    const relativeEffect = mde / 100;
+    if (isBoundTest) {
+      finalRate = baselineRate * (1 - relativeEffect);
+    } else {
+      finalRate = baselineRate * (1 + relativeEffect);
+    }
+  } else {
+    // Absolute mode
+    const absoluteEffect = mde / 100;
+    if (isBoundTest) {
+      finalRate = baselineRate - absoluteEffect;
+    } else {
+      finalRate = baselineRate + absoluteEffect;
+    }
+  }
+  return finalRate * 100;
+}
+
 
 function clearRowHighlights() {
   if (mdeTableBody) {
