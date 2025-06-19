@@ -1355,7 +1355,7 @@ function updateTimeRowCalculations(row) {
   const timeValue = parseFloat(timeInput.value) || 30;
   const results = calculateTimeResults(timeValue);
   const cells = row.querySelectorAll("td");
-  cells[1].textContent = results.visitorsPerVariant.toLocaleString();
+  cells[1].textContent = Math.round(results.visitorsPerVariant).toLocaleString();
   cells[2].textContent = `${results.mde.toFixed(2)}${
     results.isRelative ? "%" : " pp"
   }`;
