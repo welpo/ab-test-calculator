@@ -1,3 +1,9 @@
+import {
+  calculateSampleSize,
+  calculateMDE,
+  calculateMDEFromSampleSize,
+} from "./statistics.js";
+
 let passedTests = 0;
 let failedTests = 0;
 let failedTestNames = [];
@@ -12,8 +18,7 @@ function createDebugPanel() {
   const debugPanel = document.createElement("div");
   debugPanel.id = "debug-panel";
   debugPanel.style.cssText =
-    "position: fixed; bottom: 10px; right: 10px; background: rgba(30,30,30,0.9); color: white; padding: 10px; width: 500px; max-height: 500px; overflow-y: auto; font-family: monospace; font-size: 12px; z-index: 9999; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: all 0.3s ease;";
-
+    "position: fixed; bottom: 10px; right: 10px; background: rgba(30,30,30,0.9); color: white; padding: 10px; max-width: min(500px, calc(100vw - 20px)); width: 100%; max-height: 500px; overflow-y: auto; font-family: monospace; font-size: 12px; z-index: 9999; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: all 0.3s ease;";
   const header = document.createElement("div");
   header.style.cssText =
     "display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2);";
@@ -2239,7 +2244,8 @@ async function runSymmetryTest(testCase) {
     const mdeInfo = calculateMDE(
       testCase.baseline,
       testCase.mde,
-      testCase.isRelative
+      testCase.isRelative,
+      testCase.testType
     );
     const preciseSampleSize = calculateSampleSize(
       mdeInfo.baselineRate,
@@ -2251,7 +2257,10 @@ async function runSymmetryTest(testCase) {
       testCase.testType,
       testCase.correction || "none"
     );
-    const recoveredMde = calculateMDEFromSampleSize(preciseSampleSize);
+    const recoveredMde = calculateMDEFromSampleSize(
+      preciseSampleSize,
+      window.getCalculationParameters()
+    );
     if (areClose(testCase.mde, recoveredMde)) {
       debugLog(
         `Test passed - Original MDE: ${testCase.mde.toFixed(
@@ -2268,12 +2277,12 @@ async function runSymmetryTest(testCase) {
         "fail"
       );
       failedTests++;
-      failedTestNames.push(`Symmetry: ${testCase.name}`);
+      failedTestNames.push(`${testCase.name}`);
     }
   } catch (error) {
     debugLog(`Test error: ${error.message}`, "fail");
     failedTests++;
-    failedTestNames.push(`Symmetry: ${testCase.name} (Error)`);
+    failedTestNames.push(`${testCase.name} (Error)`);
   } finally {
     window.getCalculationParameters = originalGetParams;
   }
