@@ -15,6 +15,9 @@
     --color-tips-icon: #4a5568;
     --hover-color: white;
     --robot-face-color: white;
+    --color-error-bg: #fef2f2;
+    --color-error-border: #ef4444;
+    --color-error-text: #dc2626;
 
     /* Sizing variables */
     --border-radius: 5px;
@@ -64,6 +67,9 @@
         --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.2);
         --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
         --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+        --color-error-bg: #2d1b1b;
+        --color-error-border: #dc2626;
+        --color-error-text: #fca5a5;
     }
 }
 
@@ -734,6 +740,33 @@ select.input-field {
 #tipsToggle:checked~.tips-header .tips-toggle::after {
     transform: translateX(-50%) scaleY(0);
 }
+
+/* ========== ERRORS ========== */
+.error-container {
+    margin-bottom: var(--spacing-md);
+    border-left: 3px solid var(--color-error-border);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    background-color: var(--color-error-bg);
+    padding: var(--spacing-xs) var(--spacing-md);
+    color: var(--color-error-text);
+}
+
+.error-header {
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
+#errorList {
+    padding-left: 1.5rem;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+}
+
+.input-error {
+    border-color: var(--color-error-border) !important;
+}
+
 
 /* ========== TABS CONTAINER ========== */
 .tabs-container {

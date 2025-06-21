@@ -53,6 +53,11 @@ const trafficFlowRangeInput = document.getElementById("trafficFlowRange");
 const bufferInput = document.getElementById("buffer");
 const bufferRangeInput = document.getElementById("bufferRange");
 
+// Errors.
+const errorContainer = document.getElementById("errorContainer");
+const errorList = document.getElementById("errorList");
+const allInputs = [visitorsInput, baselineInput, mdeInput, alphaInput, powerInput, trafficFlowInput, bufferInput];
+
 // Results.
 const durationValueElem = document.getElementById("durationValue");
 const sampleValueElem = document.getElementById("sampleValue");
@@ -493,6 +498,11 @@ function resetToEqualDistribution() {
 }
 
 function updateCalculation() {
+  const errors = validateInputs();
+  const isValid = handleValidationErrors(errors);
+  if (!isValid) {
+    return;
+  }
   const params = getCalculationParameters();
   const mdeResults = calculateMDE(
     params.baseline,
@@ -530,6 +540,109 @@ function updateCalculation() {
   updateMDEToTimeTable();
   updateTimeToMDETable();
   checkAdvancedDefaults();
+}
+
+function validateInputs() {
+  const errors = [];
+  const checkNumberRange = (input, name, { min = -Infinity, max = Infinity, minInclusive = false, maxInclusive = false }) => {
+    const value = parseFloat(input.value);
+    if (isNaN(value)) {
+      errors.push({ input, message: `${name} must be a number.` });
+      return NaN;
+    }
+    const minCondition = minInclusive ? value < min : value <= min;
+    const maxCondition = maxInclusive ? value > max : value >= max;
+    if (minCondition || maxCondition) {
+        errors.push({ input, message: `${name} must be between ${min} and ${max}.` });
+    }
+    return value;
+  };
+
+  const visitorsNum = parseFloat(visitorsInput.value);
+  if (isNaN(visitorsNum) || visitorsNum <= 0) {
+    errors.push({ input: visitorsInput, message: "Daily visitors must be a positive number greater than 0." });
+  }
+  const baselineNum = checkNumberRange(baselineInput, "Baseline CR", { min: 0, max: 100 });
+  const mdeNum = parseFloat(mdeInput.value);
+  if (isNaN(mdeNum) || mdeNum <= 0) {
+    errors.push({ input: mdeInput, message: "Minimum Detectable Effect must be a positive number." });
+  }
+  checkNumberRange(alphaInput, "Significance level (alpha)", { min: 0, max: 1 });
+  checkNumberRange(powerInput, "Statistical power", { min: 0, max: 1 });
+  checkNumberRange(trafficFlowInput, "Traffic flow", { min: 0, max: 100, maxInclusive: true });
+
+  const bufferNum = parseFloat(bufferInput.value);
+if (isNaN(bufferNum)) {
+  errors.push({ input: bufferInput, message: "Buffer must be a number." });
+} else if (bufferNum < 0) {
+  errors.push({ input: bufferInput, message: "Buffer cannot be negative." });
+}
+
+  // MDE boundary checks.
+  if (!isNaN(baselineNum) && !isNaN(mdeNum) && mdeNum > 0) {
+    const isRelativeMode = relativeMode.checked;
+    const testType = document.querySelector('input[name="testType"]:checked').value;
+    let targetRate;
+    switch (testType) {
+      case 'one-sided':
+      case 'two-sided':
+        // For superiority tests, the target rate cannot be >= 100%
+        targetRate = isRelativeMode
+          ? baselineNum * (1 + mdeNum / 100)
+          : baselineNum + mdeNum;
+        if (targetRate >= 100) {
+          const errorMsg = `This MDE results in a target rate of ${targetRate.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
+          errors.push({ input: mdeInput, message: errorMsg });
+        }
+        break;
+      case 'non-inferiority':
+        // For non-inferiority, the resulting rate cannot be <= 0%
+        targetRate = isRelativeMode
+          ? baselineNum * (1 - mdeNum / 100)
+          : baselineNum - mdeNum;
+        if (targetRate <= 0) {
+          const errorMsg = `This non-inferiority margin results in a target rate of ${targetRate.toFixed(2)}%, which is not possible. Please choose a smaller margin.`;
+          errors.push({ input: mdeInput, message: errorMsg });
+        }
+        break;
+      case 'equivalence':
+        // For equivalence, the range must be within (0, 100)
+        const lowerBound = isRelativeMode
+          ? baselineNum * (1 - mdeNum / 100)
+          : baselineNum - mdeNum;
+        const upperBound = isRelativeMode
+          ? baselineNum * (1 + mdeNum / 100)
+          : baselineNum + mdeNum;
+        if (lowerBound <= 0) {
+          const errorMsg = `The lower bound of your equivalence range is ${lowerBound.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
+          errors.push({ input: mdeInput, message: errorMsg });
+        }
+        if (upperBound >= 100) {
+          const errorMsg = `The upper bound of your equivalence range is ${upperBound.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
+          errors.push({ input: mdeInput, message: errorMsg });
+        }
+        break;
+    }
+  }
+  return errors;
+}
+
+function handleValidationErrors(errors) {
+  errorList.innerHTML = '';
+  allInputs.forEach(input => input.classList.remove('input-error'));
+  if (errors.length === 0) {
+    errorContainer.classList.add('hidden');
+    return true;
+  } else {
+    errors.forEach(error => {
+      const li = document.createElement('li');
+      li.textContent = error.message;
+      errorList.appendChild(li);
+      error.input.classList.add('input-error');
+    });
+    errorContainer.classList.remove('hidden');
+    return false;
+  }
 }
 
 function getVariantDistributions(variantCount) {
@@ -646,7 +759,7 @@ function getTestTypeExplanation(
     }
     return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove the new rate is not worse than <span class="highlight">${worstAcceptable.toFixed(
       2
-    )}%</span> (baseline: <span id="fromValue">${fromValue}</span>%, margin: <span>${relativeChange}</span>).`;
+    )}%</span>.`;
   }
   switch (testType) {
     case "two-sided":
@@ -658,7 +771,7 @@ function getTestTypeExplanation(
     case "one-sided":
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
     case "equivalence":
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently within <span class="highlight">${relativeChange}</span> (baseline: <span id="fromValue">${fromValue}</span>%).`;
+      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently within <span class="highlight">${relativeChange}</span>.`;
     default:
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
   }
