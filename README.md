@@ -1,8 +1,4 @@
 <p align="center">
-    <a href="https://calculator.osc.garden">
-        <img src="https://raw.githubusercontent.com/welpo/srm/main/robot.png" width="150" alt="Robot">
-    </a>
-    <br>
     <a href="#contributing">
         <img src="https://img.shields.io/badge/PRs-welcome-0?style=flat-square&labelcolor=202b2d&color=4a5568" alt="PRs welcome"></a>
     <a href="#license">
@@ -23,7 +19,8 @@
 
 ## Features
 
-- **Precise**: Less than 1% deviation from [Python's scipy](https://scipy.org/)'s implementation
+- **Validated**: Implements standard, peer-reviewed formulas for clinical trial design, validated against established R packages like [`epiR`](https://cran.r-project.org/web/packages/epiR/index.html) (Stevenson & Sergeant, 2025) and [`TrialSize`](https://cran.r-project.org/web/packages/TrialSize/index.html) (Zhang et al., 2024)
+- **Four test types**: two-tailed, superiority (one-tailed), non-inferiority, and equivalence setups
 - **Duration estimation**: Calculate how long your experiment needs to run
 - **MDE estimation**: Given a number of days, see what effect you could detect
 - **Table with multiple values**: Compare different MDE or duration scenarios to evaluate test sensitivity vs. duration tradeoffs
@@ -31,32 +28,8 @@
 - **Flexible MDE options**: Calculate for relative (percentage) or absolute (percentage point) improvements
 - **Advanced settings**: Configure significance level, statistical power, test type, multiple testing corrections…
 - **Traffic distribution**: Set custom traffic allocation between variants
-- **Shareable plans**: Generate links to share test plans with colleagues
+- **Shareable plans**: Generate links to share test plans with colleagues, or download the tables as CSV
 - **Private**: Works entirely client-side with no data sent to any server
-
-## How it works
-
-This calculator uses statistical power analysis to determine the required sample size for A/B tests:
-
-1. **You provide**:
-   - Daily visitors to the test area
-   - Current (conversion, sign-up…) rate
-   - Minimum detectable effect (MDE) - the smallest improvement worth detecting
-   - Number of variants in your test
-
-2. **The calculator determines**:
-   - Required sample size for each variant using the two-proportion z-test formula:
-     $n = \frac{(z_α + z_β)^2 × (p_1 × (1 - p_1) + p_2 × (1 - p_2))}{(p_2 - p_1)^2}$
-   - Test duration based on your traffic and variant distribution:
-     $Duration = \frac{Required\,Sample\,Size}{Daily\,Visitors × Traffic\,Percentage ÷ Number\,of\,Variants}$
-
-3. **You can visualise**:
-   - Duration in days to complete the test
-   - Sample size needed per variant
-   - How changing your MDE affects test duration
-   - What improvements you can reliably detect in a fixed timeframe
-
-The calculator uses [Acklam's algorithm](https://web.archive.org/web/20151030215612/http://home.online.no/~pjacklam/notes/invnorm/) to compute z-values from standard normal distributions.
 
 ## Contributing
 
@@ -74,7 +47,7 @@ The important files are:
 - `index.html`: Basic structure
 - `styles.css`: Styles
 - `app.js`: Logic
-- `tests.js`: Tests, generated with `ab-test-calculator/ab_test_generator.py` (add `?test` to the URL to run validation tests)
+- `tests.js`: Tests, generated with the Python and R scripts in `test_generation/`. Add `?test` to the URL to run validation tests
 
 ## Need help?
 

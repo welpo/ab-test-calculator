@@ -11,7 +11,7 @@ def calculate_sample_size(
     power=0.8,
     variant_count=2,
     buffer=0,
-    test_type="two-sided",  # "two-sided", "one-sided", "non-inferiority", "equivalence"
+    test_type="one-sided",
     correction_method="none",
 ):
     baseline_rate = baseline if baseline <= 1 else baseline / 100
@@ -61,7 +61,7 @@ test_cases = [
     {
         "name": "Basic non-inferiority",
         "baseline": 0.10,
-        "relativeEffectSize": -0.1,
+        "relativeEffectSize": 0.1,
         "alpha": 0.05,
         "power": 0.8,
         "variantCount": 2,
