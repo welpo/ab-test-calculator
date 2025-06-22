@@ -1,9 +1,8 @@
 import {
   calculateSampleSize,
   calculateMDE,
-  calculateTargetRate,
   calculateMDEFromSampleSize,
-} from './statistics.js';
+} from "./statistics.js";
 
 // Singular defaults used when adding rows.
 const DEFAULT_MDE = 30;
@@ -56,7 +55,15 @@ const bufferRangeInput = document.getElementById("bufferRange");
 // Errors.
 const errorContainer = document.getElementById("errorContainer");
 const errorList = document.getElementById("errorList");
-const allInputs = [visitorsInput, baselineInput, mdeInput, alphaInput, powerInput, trafficFlowInput, bufferInput];
+const allInputs = [
+  visitorsInput,
+  baselineInput,
+  mdeInput,
+  alphaInput,
+  powerInput,
+  trafficFlowInput,
+  bufferInput,
+];
 
 // Results.
 const durationValueElem = document.getElementById("durationValue");
@@ -508,7 +515,7 @@ function updateCalculation() {
     params.baseline,
     params.mde,
     params.isRelativeMode,
-    params.testType,
+    params.testType
   );
   const sampleSizePerVariant = calculateSampleSize(
     mdeResults.baselineRate,
@@ -544,7 +551,16 @@ function updateCalculation() {
 
 function validateInputs() {
   const errors = [];
-  const checkNumberRange = (input, name, { min = -Infinity, max = Infinity, minInclusive = false, maxInclusive = false }) => {
+  const checkNumberRange = (
+    input,
+    name,
+    {
+      min = -Infinity,
+      max = Infinity,
+      minInclusive = false,
+      maxInclusive = false,
+    }
+  ) => {
     const value = parseFloat(input.value);
     if (isNaN(value)) {
       errors.push({ input, message: `${name} must be a number.` });
@@ -553,94 +569,130 @@ function validateInputs() {
     const minCondition = minInclusive ? value < min : value <= min;
     const maxCondition = maxInclusive ? value > max : value >= max;
     if (minCondition || maxCondition) {
-        errors.push({ input, message: `${name} must be between ${min} and ${max}.` });
+      errors.push({
+        input,
+        message: `${name} must be between ${min} and ${max}.`,
+      });
     }
     return value;
   };
-
   const visitorsNum = parseFloat(visitorsInput.value);
   if (isNaN(visitorsNum) || visitorsNum <= 0) {
-    errors.push({ input: visitorsInput, message: "Daily visitors must be a positive number greater than 0." });
+    errors.push({
+      input: visitorsInput,
+      message: "Daily visitors must be a positive number greater than 0.",
+    });
   }
-  const baselineNum = checkNumberRange(baselineInput, "Baseline CR", { min: 0, max: 100 });
-  const mdeNum = parseFloat(mdeInput.value);
-  if (isNaN(mdeNum) || mdeNum <= 0) {
-    errors.push({ input: mdeInput, message: "Minimum Detectable Effect must be a positive number." });
-  }
-  checkNumberRange(alphaInput, "Significance level (alpha)", { min: 0, max: 1 });
+  const baselineNum = checkNumberRange(baselineInput, "Baseline CR", {
+    min: 0,
+    max: 100,
+  });
+  checkNumberRange(alphaInput, "Significance level (alpha)", {
+    min: 0,
+    max: 1,
+  });
   checkNumberRange(powerInput, "Statistical power", { min: 0, max: 1 });
-  checkNumberRange(trafficFlowInput, "Traffic flow", { min: 0, max: 100, maxInclusive: true });
+  checkNumberRange(trafficFlowInput, "Traffic flow", {
+    min: 0,
+    max: 100,
+    maxInclusive: true,
+  });
 
   const bufferNum = parseFloat(bufferInput.value);
-if (isNaN(bufferNum)) {
-  errors.push({ input: bufferInput, message: "Buffer must be a number." });
-} else if (bufferNum < 0) {
-  errors.push({ input: bufferInput, message: "Buffer cannot be negative." });
-}
+  if (isNaN(bufferNum)) {
+    errors.push({ input: bufferInput, message: "Buffer must be a number." });
+  } else if (bufferNum < 0) {
+    errors.push({ input: bufferInput, message: "Buffer cannot be negative." });
+  }
 
-  // MDE boundary checks.
-  if (!isNaN(baselineNum) && !isNaN(mdeNum) && mdeNum > 0) {
-    const isRelativeMode = relativeMode.checked;
-    const testType = document.querySelector('input[name="testType"]:checked').value;
-    let targetRate;
-    switch (testType) {
-      case 'one-sided':
-      case 'two-sided':
-        // For superiority tests, the target rate cannot be >= 100%
-        targetRate = isRelativeMode
-          ? baselineNum * (1 + mdeNum / 100)
-          : baselineNum + mdeNum;
-        if (targetRate >= 100) {
-          const errorMsg = `This MDE results in a target rate of ${targetRate.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
-          errors.push({ input: mdeInput, message: errorMsg });
-        }
+  const mdeNum = parseFloat(mdeInput.value);
+  const testType = document.querySelector(
+    'input[name="testType"]:checked'
+  ).value;
+  const isRelativeMode = relativeMode.checked;
+  const mdeLabel = getLabelsForTestType(testType).label;
+  if (isNaN(mdeNum)) {
+    errors.push({ input: mdeInput, message: `"${mdeLabel}" must be a number.` });
+    return errors;
+  }
+  if (mdeNum === 0) {
+    errors.push({ input: mdeInput, message: `"${mdeLabel}" cannot be zero.` });
+    return errors;
+  }
+  switch (testType) {
+    case "one-sided":
+      const targetRate = isRelativeMode
+        ? baselineNum * (1 + mdeNum / 100)
+        : baselineNum + mdeNum;
+      if (mdeNum > 0 && targetRate >= 100) {
+        errors.push({
+          input: mdeInput,
+          message: `An improvement results in an invalid rate of ${targetRate.toFixed(
+            2
+          )}%.`,
+        });
+      } else if (mdeNum < 0 && targetRate <= 0) {
+        errors.push({
+          input: mdeInput,
+          message: `A reduction results in an invalid rate of ${targetRate.toFixed(
+            2
+          )}%.`,
+        });
+      }
+      break;
+    default:
+      if (mdeNum < 0) {
+        errors.push({
+          input: mdeInput,
+          message: `"${mdeLabel}" must be a positive number.`,
+        });
         break;
-      case 'non-inferiority':
-        // For non-inferiority, the resulting rate cannot be <= 0%
-        targetRate = isRelativeMode
-          ? baselineNum * (1 - mdeNum / 100)
-          : baselineNum - mdeNum;
-        if (targetRate <= 0) {
-          const errorMsg = `This non-inferiority margin results in a target rate of ${targetRate.toFixed(2)}%, which is not possible. Please choose a smaller margin.`;
-          errors.push({ input: mdeInput, message: errorMsg });
-        }
-        break;
-      case 'equivalence':
-        // For equivalence, the range must be within (0, 100)
-        const lowerBound = isRelativeMode
-          ? baselineNum * (1 - mdeNum / 100)
-          : baselineNum - mdeNum;
+      }
+      if (testType !== "non-inferiority") {
         const upperBound = isRelativeMode
           ? baselineNum * (1 + mdeNum / 100)
           : baselineNum + mdeNum;
-        if (lowerBound <= 0) {
-          const errorMsg = `The lower bound of your equivalence range is ${lowerBound.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
-          errors.push({ input: mdeInput, message: errorMsg });
-        }
         if (upperBound >= 100) {
-          const errorMsg = `The upper bound of your equivalence range is ${upperBound.toFixed(2)}%, which is not possible. Please choose a smaller MDE.`;
-          errors.push({ input: mdeInput, message: errorMsg });
+          errors.push({
+            input: mdeInput,
+            message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
+              2
+            )}%.`,
+          });
         }
-        break;
-    }
+      }
+      if (testType !== "two-sided") {
+        const lowerBound = isRelativeMode
+          ? baselineNum * (1 - mdeNum / 100)
+          : baselineNum - mdeNum;
+        if (lowerBound <= 0) {
+          errors.push({
+            input: mdeInput,
+            message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
+              2
+            )}%.`,
+          });
+        }
+      }
+      break;
   }
   return errors;
 }
 
 function handleValidationErrors(errors) {
-  errorList.innerHTML = '';
-  allInputs.forEach(input => input.classList.remove('input-error'));
+  errorList.innerHTML = "";
+  allInputs.forEach((input) => input.classList.remove("input-error"));
   if (errors.length === 0) {
-    errorContainer.classList.add('hidden');
+    errorContainer.classList.add("hidden");
     return true;
   } else {
-    errors.forEach(error => {
-      const li = document.createElement('li');
+    errors.forEach((error) => {
+      const li = document.createElement("li");
       li.textContent = error.message;
       errorList.appendChild(li);
-      error.input.classList.add('input-error');
+      error.input.classList.add("input-error");
     });
-    errorContainer.classList.remove('hidden');
+    errorContainer.classList.remove("hidden");
     return false;
   }
 }
@@ -771,8 +823,12 @@ function getTestTypeExplanation(
     case "one-sided":
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
     case "equivalence":
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently within <span class="highlight">${relativeChange}</span>.`;
-    default:
+      const baseline = parseFloat(fromValue);
+      const upperBound = parseFloat(toValue);
+      const margin = upperBound - baseline;
+      const lowerBound = (baseline - margin).toFixed(2);
+      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently, with the new rate falling within the range of <span class="highlight">${lowerBound}%</span> to <span class="highlight">${toValue}%</span>.`;
+          default:
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
   }
 }
@@ -1035,7 +1091,7 @@ function calculateMdeResults(mdeValue) {
     params.baseline,
     mdeValue,
     params.isRelativeMode,
-    params.testType,
+    params.testType
   );
   const sampleSize = calculateSampleSize(
     mdeResults.baselineRate,
@@ -1249,7 +1305,9 @@ function updateTimeRowCalculations(row) {
   const timeValue = parseFloat(timeInput.value) || 30;
   const results = calculateTimeResults(timeValue);
   const cells = row.querySelectorAll("td");
-  cells[1].textContent = Math.round(results.visitorsPerVariant).toLocaleString();
+  cells[1].textContent = Math.round(
+    results.visitorsPerVariant
+  ).toLocaleString();
   cells[2].textContent = `${results.mde.toFixed(2)}${
     results.isRelative ? "%" : " pp"
   }`;
@@ -1275,12 +1333,13 @@ function calculateTimeResults(days) {
     const variantDailyVisitors = effectiveVisitors / params.variantCount;
     visitorsPerVariant = days * variantDailyVisitors;
   }
-  const targetRate = calculateTargetRate(
+  const mdeInfo = calculateMDE(
     params.baseline,
     mde,
     params.isRelativeMode,
     params.testType
   );
+  const targetRate = mdeInfo.targetRate * 100;
   return {
     baseline: params.baseline,
     targetRate: targetRate,
@@ -1573,7 +1632,7 @@ if (urlParams.size > 0) {
   }
 }
 if (urlParams.get("test") !== null) {
-  console.log("Loading test script…")
+  console.log("Loading test script…");
   const script = document.createElement("script");
   script.type = "module";
   script.src = "tests.js";

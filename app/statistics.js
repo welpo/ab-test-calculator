@@ -138,46 +138,24 @@ export function calculateSampleSize(
 
 export function calculateMDE(baseline, mdeValue, isRelativeMode, testType) {
   const baselineRate = baseline / 100;
+  const mdeDecimal = mdeValue / 100;
+  // For non-inferiority, the direction is negative (a decrease), but entered as a positive number.
+  const direction = testType === "non-inferiority" ? -1 : 1;
+  const absoluteEffectSize = isRelativeMode
+    ? baselineRate * mdeDecimal
+    : mdeDecimal;
+  const targetRate = baselineRate + direction * absoluteEffectSize;
   let relMDE;
-  if (isRelativeMode) {
-    relMDE = mdeValue / 100;
+  if (baselineRate > 0) {
+    relMDE = (targetRate - baselineRate) / baselineRate;
   } else {
-    relMDE = mdeValue / baseline;
+    relMDE = targetRate > 0 ? Infinity : 0;
   }
-  const targetRate = calculateTargetRate(
-    baselineRate,
-    mdeValue,
-    isRelativeMode,
-    testType
-  );
   return {
-    baselineRate,
-    relMDE,
-    targetRate,
+    baselineRate, // The baseline as a decimal
+    targetRate, // The target as a decimal
+    relMDE, // The relative effect, (negative for non-inferiority)
   };
-}
-
-export function calculateTargetRate(baseline, mde, isRelativeMode, testType) {
-  const baselineRate = baseline / 100;
-  const isBoundTest =
-    testType === "non-inferiority" || testType === "equivalence";
-  let finalRate;
-  if (isRelativeMode) {
-    const relativeEffect = mde / 100;
-    if (isBoundTest) {
-      finalRate = baselineRate * (1 - relativeEffect);
-    } else {
-      finalRate = baselineRate * (1 + relativeEffect);
-    }
-  } else {
-    const absoluteEffect = mde / 100;
-    if (isBoundTest) {
-      finalRate = baselineRate - absoluteEffect;
-    } else {
-      finalRate = baselineRate + absoluteEffect;
-    }
-  }
-  return finalRate * 100;
 }
 
 export function calculateMDEFromSampleSize(sampleSizePerVariant, params) {
