@@ -11,7 +11,7 @@ def calculate_sample_size(
     power=0.8,
     variant_count=2,
     buffer=0,
-    test_type="one-sided",
+    test_type="superiority",
     correction_method="none",
 ):
     baseline_rate = baseline if baseline <= 1 else baseline / 100
@@ -30,10 +30,10 @@ def calculate_sample_size(
         # For equivalence (TOST): each test uses full alpha, full power.
         z_alpha = stats.norm.ppf(1.0 - adjusted_alpha)
         z_beta = stats.norm.ppf((1 + power) / 2)
-    elif test_type in ["non-inferiority", "one-sided"]:
+    elif test_type in ["non-inferiority", "superiority"]:
         z_alpha = stats.norm.ppf(1.0 - adjusted_alpha)
         z_beta = stats.norm.ppf(power)
-    else:  # two-sided
+    else:  # two-tailed
         z_alpha = stats.norm.ppf(1.0 - adjusted_alpha / 2.0)
         z_beta = stats.norm.ppf(power)
 

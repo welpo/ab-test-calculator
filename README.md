@@ -20,7 +20,7 @@
 ## Features
 
 - **Validated**: Implements standard, peer-reviewed formulas for clinical trial design, validated against established R packages like [`epiR`](https://cran.r-project.org/web/packages/epiR/index.html) (Stevenson & Sergeant, 2025) and [`TrialSize`](https://cran.r-project.org/web/packages/TrialSize/index.html) (Zhang et al., 2024)
-- **Four test types**: two-tailed, superiority (one-tailed), non-inferiority, and equivalence setups
+- **Four test types**: superiority (one-tailed), two-tailed, non-inferiority, and equivalence
 - **Duration estimation**: Calculate how long your experiment needs to run
 - **MDE estimation**: Given a number of days, see what effect you could detect
 - **Table with multiple values**: Compare different MDE or duration scenarios to evaluate test sensitivity vs. duration tradeoffs
@@ -46,7 +46,8 @@ The important files are:
 
 - `index.html`: Basic structure
 - `styles.css`: Styles
-- `app.js`: Logic
+- `app.js`: Main logic
+- `statistics.js`: Statistical functions
 - `tests.js`: Tests, generated with the Python and R scripts in `test_generation/`. Add `?test` to the URL to run validation tests
 
 ## Need help?

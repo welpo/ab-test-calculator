@@ -19,7 +19,7 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
     power: %.2f,
     variantCount: 2,
     buffer: 0,
-    testType: "one-sided",
+    testType: "superiority",
     correctionMethod: "none",
     expectedSampleSize: %d,
   },',

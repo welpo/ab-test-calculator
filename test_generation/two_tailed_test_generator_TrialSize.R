@@ -17,7 +17,7 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
     power: %.2f,
     variantCount: 2,
     buffer: 0,
-    testType: "two-sided",
+    testType: "two-tailed",
     correctionMethod: "none",
     expectedSampleSize: %d,
     status: "success",
@@ -34,7 +34,7 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
 }
 
 test_cases <- list(
-  list("Basic two-sided", 0.1, 0.2, 0.05, 0.8),
+  list("Basic two-tailed", 0.1, 0.2, 0.05, 0.8),
   list("High power equality", 0.05, 0.4, 0.05, 0.9),
   list("Small effect", 0.2, 0.1, 0.05, 0.8),
   list("Large effect", 0.15, 0.5, 0.05, 0.8),

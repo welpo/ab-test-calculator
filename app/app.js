@@ -12,7 +12,7 @@ const DEFAULT_TIMES = [7, 14, 30, 60, 90];
 const ADVANCED_DEFAULTS = {
   alpha: 0.05,
   power: 0.8,
-  testType: "one-sided",
+  testType: "superiority",
   correction: "none",
   trafficFlow: 100,
   buffer: 0,
@@ -240,7 +240,7 @@ function updateMDEMode() {
   const isRelativeMode = document.getElementById("relativeMode").checked;
   const testType =
     document.querySelector('input[name="testType"]:checked')?.value ||
-    "two-sided";
+    "two-tailed";
   const unit = isRelativeMode ? "(%)" : "(points)";
   const labelData = getLabelsForTestType(testType);
   const mdeLabel = document.querySelector('label[for="mde"]');
@@ -263,11 +263,11 @@ function updateMDEMode() {
 
 function getLabelsForTestType(testType) {
   const labels = {
-    "two-sided": {
+    "two-tailed": {
       label: "Minimum detectable effect",
       tooltip: "The smallest change (up or down) you want to reliably detect",
     },
-    "one-sided": {
+    "superiority": {
       label: "Minimum detectable improvement",
       tooltip: "The smallest improvement you want to reliably detect",
     },
@@ -280,7 +280,7 @@ function getLabelsForTestType(testType) {
       tooltip: "How close performance needs to be to call variants equivalent",
     },
   };
-  return labels[testType] || labels["two-sided"];
+  return labels[testType] || labels["two-tailed"];
 }
 
 function updateMDETooltips() {
@@ -620,7 +620,7 @@ function validateInputs() {
     return errors;
   }
   switch (testType) {
-    case "one-sided":
+    case "superiority":
       const targetRate = isRelativeMode
         ? baselineNum * (1 + mdeNum / 100)
         : baselineNum + mdeNum;
@@ -661,7 +661,7 @@ function validateInputs() {
           });
         }
       }
-      if (testType !== "two-sided") {
+      if (testType !== "two-tailed") {
         const lowerBound = isRelativeMode
           ? baselineNum * (1 - mdeNum / 100)
           : baselineNum - mdeNum;
@@ -814,13 +814,13 @@ function getTestTypeExplanation(
     )}%</span>.`;
   }
   switch (testType) {
-    case "two-sided":
+    case "two-tailed":
       const lowerValue = (
         parseFloat(fromValue) -
         Math.abs(parseFloat(toValue) - parseFloat(fromValue))
       ).toFixed(2);
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> change in either direction (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>% or to <span>${lowerValue}</span>%).`;
-    case "one-sided":
+    case "superiority":
       return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
     case "equivalence":
       const baseline = parseFloat(fromValue);
@@ -1240,8 +1240,8 @@ function getModificationDescription(key, currentValue) {
 
 function formatTestType(value) {
   const types = {
-    "one-sided": "One-sided",
-    "two-sided": "Two-sided",
+    "superiority": "Superiority",
+    "two-tailed": "Two-tailed",
     "non-inferiority": "Non-inferiority",
     equivalence: "Equivalence",
   };

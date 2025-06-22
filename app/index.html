@@ -324,18 +324,18 @@
                             </div>
                             <div class="radio-group-vertical">
                                 <label class="radio-label">
-                                    <input type="radio" name="testType" id="oneSided" value="one-sided" checked>
-                                    <span class="radio-text">One-sided</span>
-                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about one-sided tests">
-                                        <span class="tooltip">Detects changes in one direction (e.g. improvements).</span>
+                                    <input type="radio" name="testType" id="oneTailed" value="superiority" checked>
+                                    <span class="radio-text">Superiority</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about superiority tests">
+                                        <span class="tooltip">Can only detect improvement.</span>
                                     </span>
                                 </label>
 
                                 <label class="radio-label">
-                                    <input type="radio" name="testType" id="twoSided" value="two-sided">
-                                    <span class="radio-text">Two-sided</span>
-                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about two-sided tests">
-                                        <span class="tooltip">Detects changes in either direction (increases OR decreases).</span>
+                                    <input type="radio" name="testType" id="twoTailed" value="two-tailed">
+                                    <span class="radio-text">Two-tailed</span>
+                                    <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about two-tailed tests">
+                                        <span class="tooltip">Detects change in either direction (increase or decrease).</span>
                                     </span>
                                 </label>
 
@@ -343,7 +343,7 @@
                                     <input type="radio" name="testType" id="nonInferiority" value="non-inferiority">
                                     <span class="radio-text">Non-inferiority</span>
                                     <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about non-inferiority tests">
-                                        <span class="tooltip">Tests if the new variant is "not worse" than control by more than your margin.</span>
+                                        <span class="tooltip">Test if the new variant is "not worse" than control by more than your margin.</span>
                                     </span>
                                 </label>
 
@@ -351,7 +351,7 @@
                                     <input type="radio" name="testType" id="equivalence" value="equivalence">
                                     <span class="radio-text">Equivalence</span>
                                     <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about equivalence tests">
-                                        <span class="tooltip">Tests if two variants perform equivalently (within your margin).</span>
+                                        <span class="tooltip">Test if two variants perform equivalently (within your margin).</span>
                                     </span>
                                 </label>
                             </div>
@@ -530,7 +530,7 @@
                 <h5>Critical Values by test type</h5>
                 <div class="test-type-grid">
                     <div class="test-type-card">
-                        <h6>One-sided</h6>
+                        <h6>Superiority</h6>
                         <div class="formula-row">
                             <p><math display="inline"><msub><mi>z</mi><mi>α</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mn>1</mn><mo>-</mo><mi>α</mi><mo>)</mo></math></p>
                             <p><math display="inline"><msub><mi>z</mi><mi>β</mi></msub><mo>=</mo><mi>Φ</mi><sup>-1</sup><mo>(</mo><mi>power</mi><mo>)</mo></math></p>
@@ -539,7 +539,7 @@
                     </div>
 
                     <div class="test-type-card">
-                        <h6>Two-sided</h6>
+                        <h6>Two-tailed</h6>
                         <div class="formula-row">
                             <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>α</mi><mo>/</mo><mn>2</mn></mrow></msub></math></p>
                             <p><math display="inline"><msub><mi>z</mi><mrow><mn>1</mn><mo>-</mo><mi>β</mi></mrow></msub></math></p>
@@ -592,7 +592,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=62c13404"></script>
+<script defer type="module" src="app.js?h=46812f38"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

@@ -1,18 +1,3 @@
-export const STATISTICAL_CONSTANTS = {
-  DEFAULT_MDE: 30,
-  DEFAULT_DAYS: 30,
-  DEFAULT_MDES: [5, 10, 15, 20, 25],
-  DEFAULT_TIMES: [7, 14, 30, 60, 90],
-  ADVANCED_DEFAULTS: {
-    alpha: 0.05,
-    power: 0.8,
-    testType: "one-sided",
-    correction: "none",
-    trafficFlow: 100,
-    buffer: 0,
-  },
-};
-
 /**
  * Calculates the inverse standard normal cumulative distribution function (quantile function).
  * Approximates the Z-score for a given probability p.
@@ -74,7 +59,7 @@ export function calculateSampleSize(
   power = 0.8,
   variantCount = 2,
   buffer = 0,
-  testType = "one-sided",
+  testType = "superiority",
   correctionMethod = "none"
 ) {
   const absoluteEffectSize = baselineCR * relativeEffectSize;
@@ -100,11 +85,11 @@ export function calculateSampleSize(
   if (testType === "equivalence") {
     zAlpha = normSInv(1.0 - adjustedAlpha);
     zBeta = normSInv((1 + power) / 2);
-  } else if (testType === "non-inferiority" || testType === "one-sided") {
+  } else if (testType === "non-inferiority" || testType === "superiority") {
     zAlpha = normSInv(1.0 - adjustedAlpha);
     zBeta = normSInv(power);
   } else {
-    // two-sided.
+    // two-tailed.
     zAlpha = normSInv(1.0 - adjustedAlpha / 2.0);
     zBeta = normSInv(power);
   }
@@ -176,13 +161,13 @@ export function calculateMDEFromSampleSize(sampleSizePerVariant, params) {
     }
   }
   let mde_proportion;
-  if (params.testType === "one-sided" || params.testType === "two-sided") {
+  if (params.testType === "superiority" || params.testType === "two-tailed") {
     let zAlpha, zBeta;
-    if (params.testType === "one-sided") {
+    if (params.testType === "superiority") {
       zAlpha = normSInv(1.0 - adjustedAlpha);
       zBeta = normSInv(params.power);
     } else {
-      // two-sided.
+      // two-tailed.
       zAlpha = normSInv(1.0 - adjustedAlpha / 2.0);
       zBeta = normSInv(params.power);
     }
