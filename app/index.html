@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=1315aa44">
+    <link rel="stylesheet" href="styles.css?h=b88d3b49">
 </head>
 
 <body>
@@ -169,8 +169,8 @@
                 <input type="radio" name="tabs" id="tab-table" class="tab-input" aria-controls="tab-table-content">
                 <label for="tab-table" class="tab-label" role="tab" aria-selected="false" tabindex="0">Δ → Days</label>
 
-                <input type="radio" name="tabs" id="tab-time" class="tab-input">
-                <label for="tab-time" class="tab-label">Days → Δ</label>
+                <input type="radio" name="tabs" id="tab-time" class="tab-input" aria-controls="tab-time-content">
+                <label for="tab-time" class="tab-label" role="tab" aria-selected="false" tabindex="0">Days → Δ</label>
 
                 <!-- Tab 1: Single Estimate Content -->
                 <div id="tab-single-content" class="tab-content" role="tabpanel" aria-labelledby="tab-single">
@@ -256,19 +256,19 @@
 
             <div class="share-card">
                 <input type="text"
-                    id="experimentName"
-                    class="experiment-name-input"
-                    placeholder="Experiment name (optional)"
+                    id="planName"
+                    class="plan-name-input"
+                    placeholder="Name your plan (optional)"
                     maxlength="100"
-                    aria-label="Experiment name">
+                    aria-label="Plan name">
 
-                <a id="sharePlan" class="share-button">
+                <button id="sharePlan" class="share-button">
                     <svg id="link" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                     </svg>
                     Share plan
-                </a>
+                </button>
             </div>
         </div>
 
@@ -343,7 +343,7 @@
                                     <input type="radio" name="testType" id="nonInferiority" value="non-inferiority">
                                     <span class="radio-text">Non-inferiority</span>
                                     <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about non-inferiority tests">
-                                        <span class="tooltip">Test if the new variant is "not worse" than control by more than your margin.</span>
+                                        <span class="tooltip">Test if the new variant is not worse than control by more than your margin.</span>
                                     </span>
                                 </label>
 
@@ -592,7 +592,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=46812f38"></script>
+<script defer type="module" src="app.js?h=fccb069e"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

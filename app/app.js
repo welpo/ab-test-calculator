@@ -4,6 +4,8 @@ import {
   calculateMDEFromSampleSize,
 } from "./statistics.js";
 
+const CSVPREFIX = 'calculator.osc.garden'
+
 // Singular defaults used when adding rows.
 const DEFAULT_MDE = 30;
 const DEFAULT_DAYS = 30;
@@ -18,11 +20,45 @@ const ADVANCED_DEFAULTS = {
   buffer: 0,
 };
 
-const CALCULATION_DELAY = 80;
-const sortDelay = 300;
-let sortDebounceTimer = null;
-let calculationDebounceTimer = null;
-let hasCustomTrafficDistribution = false;
+const calculatorState = {
+  /** Daily visitors to the page being tested. */
+  visitors: 1000,
+  /** Baseline conversion rate (as a percentage, e.g. 5 for 5%). */
+  baseline: 5,
+  /** Minimum Detectable Effect (or Improvement/Margin, etc.). */
+  mde: DEFAULT_MDE,
+  /** True if MDE is relative (%), false if absolute (points). */
+  isRelativeMode: true,
+  /** Total number of variants in the test, including control. */
+  variants: 2,
+
+  /** The statistical test type.
+   * Values: 'superiority', 'two-tailed', 'non-inferiority', 'equivalence' */
+  testType: "superiority",
+  /** Multiple comparison correction method.
+   * Values: 'none', 'bonferroni', 'sidak' */
+  correction: "none",
+  trafficDistribution: [50, 50],
+  hasCustomTrafficDistribution: false,
+  alpha: 0.05,
+  /** Statistical power (1 - beta). */
+  power: 0.8,
+  /** Percentage of total traffic to be included in the experiment. */
+  trafficFlow: 100,
+  /** A buffer (as a percentage) added to the final sample size. */
+  buffer: 0,
+
+  // For "Δ → Time" and "Time → Δ" tables.
+  mdeTableRows: DEFAULT_MDES,
+  timeTableRows: DEFAULT_TIMES,
+
+  /** The ID of the currently active results tab.
+   * Values: 'tab-single', 'tab-table', 'tab-time' */
+  activeTab: "tab-single",
+
+  /** The name of the experiment plan for sharing/exporting. */
+  planName: "",
+};
 
 // Basic inputs.
 const visitorsInput = document.getElementById("visitors");
@@ -51,27 +87,17 @@ const trafficFlowInput = document.getElementById("trafficFlow");
 const trafficFlowRangeInput = document.getElementById("trafficFlowRange");
 const bufferInput = document.getElementById("buffer");
 const bufferRangeInput = document.getElementById("bufferRange");
+const resetDistributionBtn = document.getElementById("resetDistributionBtn");
 
 // Errors.
 const errorContainer = document.getElementById("errorContainer");
 const errorList = document.getElementById("errorList");
-const allInputs = [
-  visitorsInput,
-  baselineInput,
-  mdeInput,
-  alphaInput,
-  powerInput,
-  trafficFlowInput,
-  bufferInput,
-];
 
 // Results.
+const explanationElem = document.getElementById("explanation");
 const durationValueElem = document.getElementById("durationValue");
 const sampleValueElem = document.getElementById("sampleValue");
 const timeEstimateElem = document.getElementById("timeEstimate");
-const relativeChangeElem = document.getElementById("relativeChange");
-const fromValueElem = document.getElementById("fromValue");
-const toValueElem = document.getElementById("toValue");
 const variantDistributionContainer = document.getElementById(
   "variantDistributionContainer"
 );
@@ -88,177 +114,694 @@ const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
 const downloadTimeCSVBtn = document.getElementById("downloadTimeCSVBtn");
-const experimentNameInput = document.getElementById("experimentName");
+const planNameInput = document.getElementById("planName");
 const originalTitle = "A/B Test Sample Size & Duration Calculator";
 
 initializeUI();
 
-// ===== Event Listeners =====
-// Basic inputs
-visitorsInput.addEventListener("input", function () {
-  debouncedCalculation();
-});
-baselineInput.addEventListener("input", function () {
-  debouncedCalculation();
-  updateMDETooltips();
-});
-
-mdeInput.addEventListener("input", function () {
-  debouncedCalculation();
-  updateMDETooltips();
-});
-mdeInput.addEventListener("input", updateMDETooltips);
-variantsSelect.addEventListener("change", handleVariantsChange);
-relativeMode.addEventListener("change", updateMDEMode);
-absoluteMode.addEventListener("change", updateMDEMode);
-tabSingle.addEventListener("change", handleTabChange);
-tabTable.addEventListener("change", handleTabChange);
-tabTime.addEventListener("change", handleTabChange);
-tabTimeLabel.addEventListener("keydown", handleTabKeyPress);
-addTimeRowBtn.addEventListener("click", addTimeRow);
-resetTimeTableBtn.addEventListener("click", initializeTimeToMDETable);
-
-// Advanced inputs.
-alphaInput.addEventListener(
-  "input",
-  syncRangeWithInput.bind(null, alphaInput, alphaRangeInput)
-);
-alphaRangeInput.addEventListener(
-  "input",
-  syncInputWithRange.bind(null, alphaRangeInput, alphaInput)
-);
-powerInput.addEventListener(
-  "input",
-  syncRangeWithInput.bind(null, powerInput, powerRangeInput)
-);
-powerRangeInput.addEventListener(
-  "input",
-  syncInputWithRange.bind(null, powerRangeInput, powerInput)
-);
-testTypeInputs.forEach((input) => {
-  input.addEventListener("change", function () {
-    updateCalculation();
-    updateMDEMode();
-  });
-});
-correctionSelect.addEventListener("change", updateCalculation);
-trafficFlowInput.addEventListener(
-  "input",
-  syncRangeWithInput.bind(null, trafficFlowInput, trafficFlowRangeInput)
-);
-trafficFlowRangeInput.addEventListener(
-  "input",
-  syncInputWithRange.bind(null, trafficFlowRangeInput, trafficFlowInput)
-);
-bufferInput.addEventListener(
-  "input",
-  syncRangeWithInput.bind(null, bufferInput, bufferRangeInput)
-);
-bufferRangeInput.addEventListener(
-  "input",
-  syncInputWithRange.bind(null, bufferRangeInput, bufferInput)
-);
-
-addRowBtn.addEventListener("click", addMDERow);
-resetMDETableBtn.addEventListener("click", initializeMDEToTimeTable);
-downloadCSVBtn.addEventListener("click", function () {
-  downloadTableAsCSV("mdeTable");
-});
-downloadTimeCSVBtn.addEventListener("click", function () {
-  downloadTableAsCSV("timeTable");
-});
-
 function initializeUI() {
-  initializeTabs();
-  updateVariantUI();
+  decodeStateFromURL();
+  setupEventListeners();
+  runUpdateCycle();
+}
+
+function decodeStateFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
-  updateCalculation();
-  updateMDETooltips();
-  if (urlParams.size === 0 || !urlParams.has("tblmde")) {
-    initializeMDEToTimeTable();
+  if (urlParams.has("test")) {
+    console.log("Loading test script…");
+    const script = document.createElement("script");
+    script.type = "module";
+    script.src = "tests.js";
+    document.head.appendChild(script);
   }
-  if (urlParams.size === 0 || !urlParams.has("tbltime")) {
-    initializeTimeToMDETable();
+  if (urlParams.size === 0) return;
+  // Handle plan name separately since it's a string.
+  if (urlParams.has("name")) {
+    calculatorState.planName = urlParams.get("name");
+  }
+  const updateState = (param, key, parser = parseFloat) => {
+    if (urlParams.has(param)) {
+      const value = parser(urlParams.get(param));
+      if (typeof value === "number" && !isNaN(value)) {
+        calculatorState[key] = value;
+      }
+    }
+  };
+  updateState("name", "planName", (val) => val); // String, no parsing
+  updateState("vs", "visitors");
+  updateState("bl", "baseline");
+  updateState("mde", "mde");
+  updateState("tf", "trafficFlow");
+  updateState("bf", "buffer");
+  updateState("al", "alpha");
+  updateState("pw", "power");
+  updateState("var", "variants", parseInt);
+  // Booleans and special values.
+  if (urlParams.has("rel")) {
+    calculatorState.isRelativeMode = urlParams.get("rel") === "1";
+  }
+  if (urlParams.has("tt")) {
+    calculatorState.testType = urlParams.get("tt");
+  }
+  if (urlParams.has("cr")) {
+    calculatorState.correction = urlParams.get("cr");
+  }
+  if (urlParams.has("tab")) {
+    const tabMap = {
+      single: "tab-single",
+      table: "tab-table",
+      time: "tab-time",
+    };
+    calculatorState.activeTab = tabMap[urlParams.get("tab")] || "tab-single";
+  }
+  // Update traffic distribution (depends on variants)
+  if (urlParams.has("dist")) {
+    const distribution = urlParams.get("dist").split("_").map(parseFloat);
+    if (distribution.length === calculatorState.variants) {
+      calculatorState.trafficDistribution = distribution;
+      calculatorState.hasCustomTrafficDistribution = true;
+    }
+  }
+  if (urlParams.has("tblmde")) {
+    const mdeValues = urlParams
+      .get("tblmde")
+      .split("_")
+      .map(parseFloat)
+      .filter((v) => !isNaN(v));
+    if (mdeValues.length > 0) {
+      calculatorState.mdeTableRows = mdeValues;
+    }
+  }
+  if (urlParams.has("tbltime")) {
+    const timeValues = urlParams
+      .get("tbltime")
+      .split("_")
+      .map(parseFloat)
+      .filter((v) => !isNaN(v));
+    if (timeValues.length > 0) {
+      calculatorState.timeTableRows = timeValues;
+    }
   }
 }
 
-function initializeTabs() {
-  const selectedTabId = tabSingle.checked
-    ? "tab-single"
-    : tabTable.checked
-    ? "tab-table"
-    : "tab-time";
-  updateTabUI(selectedTabId);
-}
+function setupEventListeners() {
+  const debouncedUpdate = debounce(runUpdateCycle, 80);
+  const addDebouncedListener = (element, stateKey, isNumeric = true) => {
+    element.addEventListener("input", (e) => {
+      calculatorState[stateKey] = isNumeric
+        ? parseFloat(e.target.value) || 0
+        : e.target.value;
+      debouncedUpdate();
+    });
+  };
 
-function updateTabUI(selectedTabId) {
-  tabSingleLabel.setAttribute("aria-selected", selectedTabId === "tab-single");
-  tabTableLabel.setAttribute("aria-selected", selectedTabId === "tab-table");
-  tabTimeLabel.setAttribute("aria-selected", selectedTabId === "tab-time");
-  if (selectedTabId === "tab-single") {
-    mdeInput.classList.remove("hidden");
-    multipleMdesText.classList.add("hidden");
-  } else {
-    mdeInput.classList.add("hidden");
-    multipleMdesText.classList.remove("hidden");
-  }
-  const tabContents = document.querySelectorAll(".tab-content");
-  tabContents.forEach((content) => {
-    content.style.display = "none";
+  const addSyncedListener = (textInput, rangeInput, stateKey) => {
+    const listener = (e) => {
+      calculatorState[stateKey] = parseFloat(e.target.value) || 0;
+      runUpdateCycle();
+    };
+    textInput.addEventListener("input", listener);
+    rangeInput.addEventListener("input", listener);
+  };
+
+  // Basic inputs.
+  addDebouncedListener(visitorsInput, "visitors");
+  addDebouncedListener(baselineInput, "baseline");
+  addDebouncedListener(mdeInput, "mde");
+  addDebouncedListener(planNameInput, "planName", false);
+
+  // Mode and test configuration.
+  relativeMode.addEventListener("change", () => {
+    calculatorState.isRelativeMode = true;
+    runUpdateCycle();
   });
-  const selectedContent = document.getElementById(`${selectedTabId}-content`);
-  if (selectedContent) {
-    selectedContent.style.display = "block";
+  absoluteMode.addEventListener("change", () => {
+    calculatorState.isRelativeMode = false;
+    runUpdateCycle();
+  });
+
+  variantsSelect.addEventListener("change", (e) => {
+    const newVariantCount = parseInt(e.target.value, 10);
+    calculatorState.variants = newVariantCount;
+    const equalShare = Math.floor(100 / newVariantCount);
+    const newDistribution = Array(newVariantCount).fill(equalShare);
+    const remainder = 100 - equalShare * newVariantCount;
+    if (newDistribution.length > 0) newDistribution[0] += remainder;
+    calculatorState.trafficDistribution = newDistribution;
+    calculatorState.hasCustomTrafficDistribution = false;
+    runUpdateCycle();
+  });
+
+  testTypeInputs.forEach((input) => {
+    input.addEventListener("change", (e) => {
+      calculatorState.testType = e.target.value;
+      runUpdateCycle();
+    });
+  });
+
+  correctionSelect.addEventListener("change", (e) => {
+    calculatorState.correction = e.target.value;
+    runUpdateCycle();
+  });
+
+  // Advanced inputs.
+  addSyncedListener(alphaInput, alphaRangeInput, "alpha");
+  addSyncedListener(powerInput, powerRangeInput, "power");
+  addSyncedListener(trafficFlowInput, trafficFlowRangeInput, "trafficFlow");
+  addSyncedListener(bufferInput, bufferRangeInput, "buffer");
+
+  // Tabs.
+  [tabSingle, tabTable, tabTime].forEach((tab) => {
+    tab.addEventListener("change", (e) => {
+      calculatorState.activeTab = e.target.id;
+      runUpdateCycle();
+    });
+  });
+
+  [tabSingleLabel, tabTableLabel, tabTimeLabel].forEach((label) => {
+    label.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        const tabId = label.getAttribute("for");
+        calculatorState.activeTab = tabId;
+        runUpdateCycle();
+      }
+    });
+  });
+
+  // Tables.
+  addRowBtn.addEventListener("click", () => {
+    calculatorState.mdeTableRows.push(DEFAULT_MDE);
+    runUpdateCycle();
+    const lastInput = mdeTableBody.querySelector("tr:last-child .mde-input");
+    if (lastInput) {
+      lastInput.focus();
+      lastInput.select();
+    }
+  });
+  addTimeRowBtn.addEventListener("click", () => {
+    calculatorState.timeTableRows.push(DEFAULT_DAYS);
+    runUpdateCycle();
+    const lastInput = timeTableBody.querySelector("tr:last-child .time-input");
+    if (lastInput) {
+      lastInput.focus();
+      lastInput.select();
+    }
+  });
+  resetMDETableBtn.addEventListener("click", () => {
+    calculatorState.mdeTableRows = [...DEFAULT_MDES];
+    runUpdateCycle();
+  });
+  resetTimeTableBtn.addEventListener("click", () => {
+    calculatorState.timeTableRows = [...DEFAULT_TIMES];
+    runUpdateCycle();
+  });
+
+  function setupTableDelegation(tableElement, rowInputDataKey, inputClassName) {
+    tableElement.addEventListener("click", (e) => {
+      if (e.target.classList.contains("delete-row")) {
+        const indexToDelete = parseInt(e.target.dataset.index, 10);
+        if (
+          !isNaN(indexToDelete) &&
+          calculatorState[rowInputDataKey][indexToDelete] !== undefined
+        ) {
+          calculatorState[rowInputDataKey].splice(indexToDelete, 1);
+        }
+        runUpdateCycle();
+      }
+    });
+
+    tableElement.addEventListener("input", (e) => {
+      if (e.target.classList.contains(inputClassName)) {
+        const indexToUpdate = parseInt(e.target.dataset.index, 10);
+        if (
+          !isNaN(indexToUpdate) &&
+          calculatorState[rowInputDataKey][indexToUpdate] !== undefined
+        ) {
+          // Silently update the state array with the raw string.
+          calculatorState[rowInputDataKey][indexToUpdate] = e.target.value;
+        }
+      }
+    });
+
+    const handleSortTrigger = (e) => {
+      if (e.target.classList.contains(inputClassName)) {
+        const currentValues = calculatorState[rowInputDataKey];
+        const validValues = currentValues
+          .map((val) => parseFloat(val))
+          .filter((num) => {
+            if (inputClassName === "time-input") {
+              return !isNaN(num) && num > 0;
+            }
+            return !isNaN(num) && num !== 0;
+          });
+        calculatorState[rowInputDataKey] = validValues;
+        sortStateTable(rowInputDataKey, e);
+      }
+    };
+    tableElement.addEventListener("change", handleSortTrigger);
+    tableElement.addEventListener("blur", handleSortTrigger, true);
   }
-}
 
-function handleTabChange(e) {
-  updateTabUI(e.target.id);
-}
-
-tabSingleLabel.addEventListener("keydown", handleTabKeyPress);
-tabTableLabel.addEventListener("keydown", handleTabKeyPress);
-
-function debouncedCalculation() {
-  clearTimeout(calculationDebounceTimer);
-  calculationDebounceTimer = setTimeout(() => {
-    updateCalculation();
-  }, CALCULATION_DELAY);
-}
-
-function handleTabKeyPress(e) {
-  // Enter or Space activates the tab.
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    const tabInput = document.getElementById(this.getAttribute("for"));
-    tabInput.checked = true;
-    updateTabUI(tabInput.id);
+  function sortStateTable(stateArrayKey) {
+  if (calculatorState[stateArrayKey]) {
+      calculatorState[stateArrayKey].sort((a, b) => a - b);
+    }
+    runUpdateCycle();
   }
-}
 
-function updateMDEMode() {
-  const isRelativeMode = document.getElementById("relativeMode").checked;
-  const testType =
-    document.querySelector('input[name="testType"]:checked')?.value ||
-    "two-tailed";
-  const unit = isRelativeMode ? "(%)" : "(points)";
-  const labelData = getLabelsForTestType(testType);
-  const mdeLabel = document.querySelector('label[for="mde"]');
-  if (mdeLabel) {
-    mdeLabel.textContent = `${labelData.label} ${unit}`;
-  }
-  const mainTooltip = document.querySelector(
-    'label[for="mde"] + .tooltip-trigger .tooltip'
+  setupTableDelegation(mdeTable, "mdeTableRows", "mde-input");
+  setupTableDelegation(timeTable, "timeTableRows", "time-input");
+
+  downloadCSVBtn.addEventListener("click", () =>
+    downloadTableAsCSV("mdeTable")
   );
-  if (mainTooltip) {
-    mainTooltip.textContent = labelData.tooltip;
+  downloadTimeCSVBtn.addEventListener("click", () =>
+    downloadTableAsCSV("timeTable")
+  );
+  shareButton.addEventListener("click", handleShareButtonClick);
+
+  variantDistributionContainer.addEventListener("input", (e) => {
+    if (e.target.classList.contains("variant-range")) {
+      const changedIndex = parseInt(e.target.dataset.index, 10);
+      const newValue = parseInt(e.target.value, 10);
+      const newDistribution = calculateNewDistribution(
+        calculatorState.trafficDistribution,
+        changedIndex,
+        newValue
+      );
+      calculatorState.trafficDistribution = newDistribution;
+      calculatorState.hasCustomTrafficDistribution = true;
+      runUpdateCycle();
+    }
+  });
+
+  resetDistributionBtn.addEventListener("click", () => {
+    const newVariantCount = calculatorState.variants;
+    const equalShare = Math.floor(100 / newVariantCount);
+    const newDistribution = Array(newVariantCount).fill(equalShare);
+    const remainder = 100 - equalShare * newVariantCount;
+    if (newDistribution.length > 0) {
+      newDistribution[0] += remainder;
+    }
+    calculatorState.trafficDistribution = newDistribution;
+    calculatorState.hasCustomTrafficDistribution = false;
+    runUpdateCycle();
+  });
+
+  planNameInput.addEventListener("input", function () {
+    updateDocumentTitle();
+  });
+}
+
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func.apply(context, args);
+    }, delay);
+  };
+}
+
+function runUpdateCycle() {
+  const errors = validateInputs(calculatorState);
+  const results =
+    !errors || errors.length === 0 ? calculateAllResults(calculatorState) : null;
+  render(calculatorState, results, errors);
+}
+
+function validateInputs(state) {
+  const errors = [];
+  const {
+    visitors,
+    baseline,
+    alpha,
+    power,
+    trafficFlow,
+    buffer,
+    mde,
+    testType,
+    isRelativeMode,
+  } = state;
+  const mdeLabel = getLabelsForTestType(testType).label;
+  const checkNumber = (value, key, message) => {
+    if (isNaN(value) || value === null) {
+      errors.push({ key, message: `${message} must be a number.` });
+      return false;
+    }
+    return true;
+  };
+
+  if (!checkNumber(visitors, "visitors", "Daily visitors")) return errors;
+  if (visitors <= 0) {
+    errors.push({
+      key: "visitors",
+      message: "Daily visitors must be a positive number greater than 0.",
+    });
   }
-  const tableMDEHeader = document.querySelector("#mdeTable th:first-child");
-  if (tableMDEHeader) {
-    tableMDEHeader.innerHTML = isRelativeMode ? "Δ (%)" : "Δ (points)";
+
+  if (!checkNumber(baseline, "baseline", "Baseline CR")) return errors;
+  if (baseline <= 0 || baseline >= 100) {
+    errors.push({
+      key: "baseline",
+      message: "Baseline rate must be between 0 and 100.",
+    });
   }
-  updateCalculation();
-  updateMDETooltips();
+
+  if (!checkNumber(alpha, "alpha", "Significance level")) return errors;
+  if (alpha <= 0 || alpha >= 1) {
+    errors.push({
+      key: "alpha",
+      message: "Significance level must be between 0 and 1.",
+    });
+  }
+
+  if (!checkNumber(power, "power", "Statistical power")) return errors;
+  if (power <= 0 || power >= 1) {
+    errors.push({
+      key: "power",
+      message: "Statistical power must be between 0 and 1.",
+    });
+  }
+
+  if (!checkNumber(trafficFlow, "trafficFlow", "Traffic flow")) return errors;
+  if (trafficFlow <= 0 || trafficFlow > 100) {
+    errors.push({
+      key: "trafficFlow",
+      message: "Traffic flow must be between 0 and 100.",
+    });
+  }
+
+  if (!checkNumber(buffer, "buffer", "Buffer")) return errors;
+  if (buffer < 0) {
+    errors.push({ key: "buffer", message: "Buffer cannot be negative." });
+  }
+
+  if (!checkNumber(mde, "mde", `"${mdeLabel}"`)) return errors;
+  if (mde === 0) {
+    errors.push({ key: "mde", message: `"${mdeLabel}" cannot be zero.` });
+  }
+
+  switch (testType) {
+    case "superiority":
+      const targetRate = isRelativeMode
+        ? baseline * (1 + mde / 100)
+        : baseline + mde;
+      if (mde > 0 && targetRate >= 100) {
+        errors.push({
+          key: "mde",
+          message: `An improvement results in an invalid rate of ${targetRate.toFixed(
+            2
+          )}%.`,
+        });
+      } else if (mde < 0 && targetRate <= 0) {
+        errors.push({
+          key: "mde",
+          message: `A reduction results in an invalid rate of ${targetRate.toFixed(
+            2
+          )}%.`,
+        });
+      }
+      break;
+    default:
+      if (mde < 0) {
+        errors.push({
+          key: "mde",
+          message: `"${mdeLabel}" must be a positive number.`,
+        });
+        break;
+      }
+      if (testType !== "non-inferiority") {
+        const upperBound = isRelativeMode
+          ? baseline * (1 + mde / 100)
+          : baseline + mde;
+        if (upperBound >= 100) {
+          errors.push({
+            key: "mde",
+            message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
+              2
+            )}%.`,
+          });
+        }
+      }
+      if (testType !== "two-tailed") {
+        const lowerBound = isRelativeMode
+          ? baseline * (1 - mde / 100)
+          : baseline - mde;
+        if (lowerBound <= 0) {
+          errors.push({
+            key: "mde",
+            message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
+              2
+            )}%.`,
+          });
+        }
+      }
+      break;
+  }
+  return errors;
+}
+
+function calculateAllResults(state) {
+  try {
+    const mainResult = getSampleSizeAndDurationForMde(state.mde, state);
+    const mdeTableData = state.mdeTableRows.map((mdeValue) =>
+      getSampleSizeAndDurationForMde(mdeValue, state)
+    );
+    const timeTableData = state.timeTableRows.map((dayValue) =>
+      calculateTimeRowResult(dayValue, state)
+    );
+    return {
+      duration: mainResult.durationDays,
+      sampleSizePerVariant: mainResult.sampleSize,
+      targetRate: mainResult.targetRate,
+      mdeTableData,
+      timeTableData,
+    };
+  } catch (error) {
+    console.error("Calculation error:", error);
+    return null;
+  }
+}
+
+function getSampleSizeAndDurationForMde(mdeValue, state) {
+  const mdeInfo = calculateMDE(
+    state.baseline,
+    mdeValue,
+    state.isRelativeMode,
+    state.testType
+  );
+  const sampleSize = calculateSampleSize(
+    mdeInfo.baselineRate,
+    mdeInfo.relMDE,
+    state.alpha,
+    state.power,
+    state.variants,
+    state.buffer,
+    state.testType,
+    state.correction
+  );
+  const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
+  const lowestPercentage = Math.min(...state.trafficDistribution) / 100;
+  const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
+  const durationDays =
+    lowestVariantDailyVisitors > 0
+      ? Math.ceil(sampleSize / lowestVariantDailyVisitors)
+      : 0;
+  return {
+    baseline: state.baseline,
+    targetRate: mdeInfo.targetRate * 100,
+    sampleSize,
+    durationDays,
+  };
+}
+
+function calculateTimeRowResult(days, state) {
+  const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
+  const lowestPercentage = Math.min(...state.trafficDistribution) / 100;
+  const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
+  const sampleSizePerVariant = Math.ceil(days * lowestVariantDailyVisitors);
+  const mde = calculateMDEFromSampleSize(sampleSizePerVariant, state);
+  const mdeInfo = calculateMDE(
+    state.baseline,
+    mde,
+    state.isRelativeMode,
+    state.testType
+  );
+  const targetRate = mdeInfo.targetRate * 100;
+  return {
+    baseline: state.baseline,
+    targetRate,
+    mde,
+    isRelative: state.isRelativeMode,
+    visitorsPerVariant: sampleSizePerVariant,
+  };
+}
+
+function render(state, results, errors) {
+  renderFormInputs(state);
+  renderDynamicText(state);
+  renderAdvancedStatus(state);
+  renderMainResults(state, results, errors);
+  renderUIState(state);
+  renderVariantSliders(state);
+  renderDataTables(state, results);
+  renderValidationErrors(errors);
+  updateDocumentTitle();
+}
+
+function renderFormInputs(state) {
+  // Basic inputs
+  visitorsInput.value = state.visitors;
+  baselineInput.value = state.baseline;
+  mdeInput.value = state.mde;
+  variantsSelect.value = state.variants;
+  planNameInput.value = state.planName;
+  // Mode and Test Type
+  relativeMode.checked = state.isRelativeMode;
+  absoluteMode.checked = !state.isRelativeMode;
+  document.querySelector(
+    `input[name="testType"][value="${state.testType}"]`
+  ).checked = true;
+  // Advanced settings
+  correctionSelect.value = state.correction;
+  alphaInput.value = state.alpha;
+  alphaRangeInput.value = state.alpha;
+  powerInput.value = state.power;
+  powerRangeInput.value = state.power;
+  trafficFlowInput.value = state.trafficFlow;
+  trafficFlowRangeInput.value = state.trafficFlow;
+  bufferInput.value = state.buffer;
+  bufferRangeInput.value = state.buffer;
+}
+
+function renderDynamicText(state) {
+  // Update the main MDE label based on test type and mode.
+  const mdeLabels = getLabelsForTestType(state.testType);
+  const mdeModeUnit = state.isRelativeMode ? "(%)" : "(points)";
+  document.querySelector(
+    'label[for="mde"]'
+  ).textContent = `${mdeLabels.label} ${mdeModeUnit}`;
+  document.querySelector(
+    'label[for="mde"] + .tooltip-trigger .tooltip'
+  ).textContent = mdeLabels.tooltip;
+  // Update the tooltips for the relative/absolute mode selectors.
+  const relativeTooltipText = `'${state.mde}%' means going from ${
+    state.baseline
+  }% to ${(state.baseline * (1 + state.mde / 100)).toFixed(
+    2
+  )}% conversion rate`;
+  const absoluteTooltipText = `'${state.mde} points' means going from ${
+    state.baseline
+  }% to ${(state.baseline + state.mde).toFixed(2)}% conversion rate`;
+  document.querySelector(
+    'label[for="relativeMode"] .tooltip, #relativeMode ~ .tooltip-trigger .tooltip'
+  ).textContent = relativeTooltipText;
+  document.querySelector(
+    'label[for="absoluteMode"] .tooltip, #absoluteMode ~ .tooltip-trigger .tooltip'
+  ).textContent = absoluteTooltipText;
+  // Update the header of the MDE table.
+  document.querySelector("#mdeTable th:first-child").innerHTML =
+    state.isRelativeMode ? "Δ (%)" : "Δ (points)";
+}
+
+function renderAdvancedStatus(state) {
+  const defaultModifications = Object.entries(ADVANCED_DEFAULTS)
+    .filter(([key, defaultValue]) => state[key] !== defaultValue)
+    .map(([key]) => getModificationDescription(key, state[key]));
+  const trafficModification = !isEqualDistribution(state.trafficDistribution, state.variants)
+    ? [`Traffic distribution: ${state.trafficDistribution.join('/')}`]
+    : [];
+  const modifications = [...defaultModifications, ...trafficModification];
+  const hasModifications = modifications.length > 0;
+  advancedStatusDot.classList.toggle('active', hasModifications);
+  advancedHeader.classList.toggle('no-modifications', !hasModifications);
+  tooltipModifications.innerHTML = hasModifications
+    ? modifications.map((m) => `<li>${m}</li>`).join('')
+    : '';
+}
+
+function isEqualDistribution(distribution, variantCount) {
+  const equalShare = Math.floor(100 / variantCount);
+  const expectedDistribution = Array(variantCount).fill(equalShare);
+  const remainder = 100 - equalShare * variantCount;
+  if (expectedDistribution.length > 0) expectedDistribution[0] += remainder;
+  return distribution.length === expectedDistribution.length &&
+         distribution.every((val, i) => val === expectedDistribution[i]);
+}
+
+function renderMainResults(state, results, errors) {
+  const hasValidResults = results && (!errors || errors.length === 0);
+  if (hasValidResults) {
+    durationValueElem.textContent = results.duration.toLocaleString();
+    sampleValueElem.textContent = results.sampleSizePerVariant.toLocaleString();
+    timeEstimateElem.textContent = formatTimeEstimate(results.duration);
+    explanationElem.innerHTML = getTestTypeExplanation(state, results);
+  } else {
+    durationValueElem.textContent = "—";
+    sampleValueElem.textContent = "—";
+    timeEstimateElem.textContent = "...";
+    explanationElem.innerHTML = "Enter valid parameters to see the test plan.";
+  }
+}
+
+function renderUIState(state) {
+  const tabs = {
+    "tab-single": {
+      label: tabSingleLabel,
+      content: document.getElementById("tab-single-content"),
+    },
+    "tab-table": {
+      label: tabTableLabel,
+      content: document.getElementById("tab-table-content"),
+    },
+    "tab-time": {
+      label: tabTimeLabel,
+      content: document.getElementById("tab-time-content"),
+    },
+  };
+  for (const [tabId, tabElements] of Object.entries(tabs)) {
+    const isActive = state.activeTab === tabId;
+    tabElements.content.style.display = isActive ? "block" : "none";
+    tabElements.label.setAttribute("aria-selected", isActive);
+    const radioButton = document.getElementById(tabId);
+    if (radioButton) {
+      radioButton.checked = isActive;
+    }
+  }
+  const isSingleTab = state.activeTab === "tab-single";
+  mdeInput.classList.toggle("hidden", !isSingleTab);
+  multipleMdesText.classList.toggle("hidden", isSingleTab);
+}
+
+function renderValidationErrors(errors) {
+  const elementMap = {
+    visitors: visitorsInput,
+    baseline: baselineInput,
+    mde: mdeInput,
+    alpha: alphaInput,
+    power: powerInput,
+    trafficFlow: trafficFlowInput,
+    buffer: bufferInput,
+  };
+  Object.values(elementMap).forEach(
+    (el) => el && el.classList.remove("input-error")
+  );
+  errorList.innerHTML = "";
+  const hasErrors = errors && errors.length > 0;
+  errorContainer.classList.toggle("hidden", !hasErrors);
+  if (hasErrors) {
+    errors.forEach((error) => {
+      const li = document.createElement("li");
+      li.textContent = error.message;
+      errorList.appendChild(li);
+      if (elementMap[error.key]) {
+        elementMap[error.key].classList.add("input-error");
+      }
+    });
+  }
 }
 
 function getLabelsForTestType(testType) {
@@ -267,7 +810,7 @@ function getLabelsForTestType(testType) {
       label: "Minimum detectable effect",
       tooltip: "The smallest change (up or down) you want to reliably detect",
     },
-    "superiority": {
+    superiority: {
       label: "Minimum detectable improvement",
       tooltip: "The smallest improvement you want to reliably detect",
     },
@@ -283,553 +826,263 @@ function getLabelsForTestType(testType) {
   return labels[testType] || labels["two-tailed"];
 }
 
-function updateMDETooltips() {
-  const baseline = parseFloat(baselineInput.value) || 5;
-  const mde = parseFloat(mdeInput.value) || 20;
-  const relativeIncrease = (baseline * (1 + mde / 100)).toFixed(2);
-  const absoluteIncrease = (baseline + mde).toFixed(2);
-  const relativeTooltip = document.querySelector(
-    'label[for="relativeMode"] .tooltip, #relativeMode ~ .tooltip-trigger .tooltip'
-  );
-  const absoluteTooltip = document.querySelector(
-    'label[for="absoluteMode"] .tooltip, #absoluteMode ~ .tooltip-trigger .tooltip'
-  );
-  if (relativeTooltip) {
-    relativeTooltip.textContent = `'${mde}%' means going from ${baseline}% to ${relativeIncrease}% conversion rate`;
-  }
-  if (absoluteTooltip) {
-    absoluteTooltip.textContent = `'${mde} points' means going from ${baseline}% to ${absoluteIncrease}% conversion rate`;
-  }
-}
-
-function handleVariantsChange() {
-  updateVariantUI();
-  updateCalculation();
-}
-
-function updateVariantUI() {
-  const variantCount = parseInt(variantsSelect.value);
-  updateVariantDistributionUI(variantCount);
-}
-
-function updateVariantDistributionUI(variantCount) {
-  hasCustomTrafficDistribution = false;
-  variantDistributionContainer.innerHTML = "";
-  const equalPercentage = Math.floor(100 / variantCount);
-  const remainderPercentage = 100 - equalPercentage * variantCount;
-  for (let i = 0; i < variantCount; i++) {
-    const letter = String.fromCharCode(65 + i); // A, B, C, D, E…
-    const percentage =
-      i === 0 ? equalPercentage + remainderPercentage : equalPercentage;
-    const variantItem = document.createElement("div");
-    variantItem.className = "variant-slider-item";
-    variantItem.innerHTML = `
-          <div class="variant-slider-header">
-              <div class="variant-letter-label">
-                  ${letter}
-              </div>
-              <div class="variant-percentage" id="percentage${letter}">${percentage}%</div>
-          </div>
-          <input type="range"
-                  id="slider${letter}"
-                  class="variant-range"
-                  min="1"
-                  max="99"
-                  value="${percentage}"
-                  data-variant="${letter}">
-      `;
-    variantDistributionContainer.appendChild(variantItem);
-  }
-  document.querySelectorAll(".variant-range").forEach((slider) => {
-    slider.addEventListener("input", handleSliderChange);
-  });
-  const resetDistributionBtn = document.getElementById("resetDistributionBtn");
-  if (resetDistributionBtn) {
-    resetDistributionBtn.addEventListener("click", function () {
-      resetToEqualDistribution();
-    });
-  }
-}
-
-function handleSliderChange(e) {
-  hasCustomTrafficDistribution = true;
-  const changedSlider = e.target;
-  const changedVariant = changedSlider.dataset.variant;
-  const newValue = parseInt(changedSlider.value);
-  const allSliders = document.querySelectorAll(".variant-range");
-  const otherSliders = Array.from(allSliders).filter(
-    (slider) => slider.dataset.variant !== changedVariant
-  );
-  const minRequiredForOthers = otherSliders.length;
-  const maxAllowedForThis = 100 - minRequiredForOthers;
-  if (newValue > maxAllowedForThis) {
-    changedSlider.value = maxAllowedForThis;
-    const percentageElement = document.getElementById(
-      `percentage${changedVariant}`
-    );
-    if (percentageElement) {
-      percentageElement.textContent = `${maxAllowedForThis}%`;
+function renderVariantSliders(state) {
+  const currentSliderCount = variantDistributionContainer.children.length;
+  // If the number of variants has changed, we must rebuild the sliders from scratch.
+  if (currentSliderCount !== state.variants) {
+    variantDistributionContainer.innerHTML = "";
+    for (let i = 0; i < state.variants; i++) {
+      const letter = String.fromCharCode(65 + i);
+      const percentage = state.trafficDistribution[i];
+      const variantItem = document.createElement("div");
+      variantItem.className = "variant-slider-item";
+      variantItem.innerHTML = `
+        <div class="variant-slider-header">
+          <div class="variant-letter-label">${letter}</div>
+          <div class="variant-percentage" id="percentage${letter}">${percentage}%</div>
+        </div>
+        <input
+          type="range"
+          id="slider${letter}"
+          class="variant-range"
+          min="1"
+          max="99"
+          value="${percentage}"
+          data-index="${i}"
+        >`;
+      variantDistributionContainer.appendChild(variantItem);
     }
-    resetToEqualDistribution();
-    return;
+  } else {
+    for (let i = 0; i < state.variants; i++) {
+      const letter = String.fromCharCode(65 + i);
+      const percentage = state.trafficDistribution[i];
+      const slider = document.getElementById(`slider${letter}`);
+      const percentageDisplay = document.getElementById(`percentage${letter}`);
+      if (slider && slider.value != percentage) {
+        slider.value = percentage;
+      }
+      if (percentageDisplay) {
+        percentageDisplay.textContent = `${percentage}%`;
+      }
+    }
   }
-  const percentageElement = document.getElementById(
-    `percentage${changedVariant}`
-  );
-  if (percentageElement) {
-    percentageElement.textContent = `${newValue}%`;
-  }
-  let totalPercentage = newValue;
-  otherSliders.forEach((slider) => {
-    totalPercentage += parseInt(slider.value);
-  });
-  const adjustmentNeeded = totalPercentage - 100;
-  if (adjustmentNeeded !== 0) {
-    distributeAdjustment(otherSliders, adjustmentNeeded);
-  }
-  updateCalculation();
 }
 
-function distributeAdjustment(sliders, adjustmentAmount) {
-  if (sliders.length === 0) return;
-  const currentValues = sliders.map((slider) => parseInt(slider.value));
-  const totalOtherValue = currentValues.reduce((sum, val) => sum + val, 0);
-  let adjustmentsLeft = adjustmentAmount;
-  let adjustedValues = [];
-  // First pass: calculate adjustments proportionally.
-  for (let i = 0; i < sliders.length; i++) {
-    const currentValue = currentValues[i];
-    // Calculate proportional adjustment (negative if we need to reduce).
-    const weight =
-      totalOtherValue > 0 ? currentValue / totalOtherValue : 1 / sliders.length;
-    let adjustment = Math.round(adjustmentAmount * weight);
-    // Calculate new value with range constraints.
-    let newValue = Math.max(1, Math.min(99, currentValue - adjustment));
-    // Keep track of the actual adjustment made.
-    adjustment = currentValue - newValue;
-    adjustmentsLeft -= adjustment;
-    adjustedValues.push(newValue);
-  }
-  // Second pass: distribute any remaining adjustment.
-  if (adjustmentsLeft !== 0) {
-    // Sort sliders by value to prioritize which ones to adjust.
-    const sliderIndices = [...Array(sliders.length).keys()];
-    if (adjustmentsLeft > 0) {
-      // Need to reduce more, start with larger values.
-      sliderIndices.sort((a, b) => adjustedValues[b] - adjustedValues[a]);
+function calculateNewDistribution(currentDistribution, changedIndex, newValue) {
+  const numVariants = currentDistribution.length;
+  const newDist = [...currentDistribution];
+  // Set the value for the slider that was moved, clamping it to its valid range.
+  const minRequiredForOthers = numVariants - 1;
+  const maxAllowed = 100 - minRequiredForOthers;
+  newDist[changedIndex] = Math.max(1, Math.min(newValue, maxAllowed));
+  const otherIndices = Array.from({ length: numVariants }, (_, i) => i).filter(
+    (i) => i !== changedIndex
+  );
+  if (otherIndices.length === 0) return newDist;
+  // Calculate the total adjustment needed.
+  const currentSum = newDist.reduce((a, b) => a + b, 0);
+  let adjustmentToDistribute = currentSum - 100;
+  // Iteratively apply the adjustment one point at a time.
+  // This loop continues until the total is 100.
+  // An emergency break prevents infinite loops in edge cases.
+  let emergencyBreak = 0;
+  while (adjustmentToDistribute !== 0 && emergencyBreak < 101) {
+    let slidersToAdjust = otherIndices.map((index) => ({
+      index: index,
+      value: newDist[index],
+    }));
+    // If we need to subtract (sum > 100), we take from the largest sliders first.
+    // If we need to add (sum < 100), we give to the smallest sliders first.
+    if (adjustmentToDistribute > 0) {
+      slidersToAdjust.sort((a, b) => b.value - a.value);
     } else {
-      // Need to increase more, start with smaller values.
-      sliderIndices.sort((a, b) => adjustedValues[a] - adjustedValues[b]);
+      slidersToAdjust.sort((a, b) => a.value - b.value);
     }
-    // Distribute one point at a time to appropriate sliders.
-    // Add a maximum iteration count to prevent infinite loops.
-    let maxIterations = 100; // Prevent infinite loops.
-    let iterationCount = 0;
-    for (
-      let i = 0;
-      Math.abs(adjustmentsLeft) > 0 &&
-      i < sliderIndices.length &&
-      iterationCount < maxIterations;
-      i++
-    ) {
-      const idx = sliderIndices[i];
-      const adjustment = adjustmentsLeft > 0 ? 1 : -1;
-      const newValue = adjustedValues[idx] - adjustment;
-      if (newValue >= 1 && newValue <= 99) {
-        adjustedValues[idx] = newValue;
-        adjustmentsLeft -= adjustment;
-      }
-      // Circle back if we need more adjustments.
-      if (i === sliderIndices.length - 1 && Math.abs(adjustmentsLeft) > 0) {
-        i = -1; // Will be incremented to 0 in the next loop iteration.
-        iterationCount++;
-      }
+    // Find the first slider in the sorted list that can be adjusted.
+    let sliderToAdjust = slidersToAdjust.find((s) => {
+      return adjustmentToDistribute > 0 ? s.value > 1 : s.value < 99;
+    });
+    // If no slider can be adjusted, stop.
+    if (!sliderToAdjust) {
+      break;
     }
-    // If we still have adjustments left after maxIterations…
-    if (Math.abs(adjustmentsLeft) > 0) {
-      console.warn(
-        `Could not distribute all adjustments (${adjustmentsLeft} remaining). Some constraints couldn't be satisfied.`
-      );
-      if (adjustmentsLeft > 0) {
-        // We need to reduce values but can't - force minimum values.
-        for (let i = 0; i < adjustedValues.length; i++) {
-          adjustedValues[i] = 1;
-        }
-        // Distribute remaining among first sliders to reach 100%.
-        let remaining = 100 - 1 * adjustedValues.length;
-        for (let i = 0; i < adjustedValues.length && remaining > 0; i++) {
-          const additionalValue = Math.min(98, remaining);
-          adjustedValues[i] += additionalValue;
-          remaining -= additionalValue;
-        }
-      }
-    }
+    // Apply a single +1 or -1 adjustment.
+    const adjustment = Math.sign(adjustmentToDistribute); // -1 or 1
+    newDist[sliderToAdjust.index] -= adjustment;
+    adjustmentToDistribute -= adjustment;
+    emergencyBreak++;
   }
-  for (let i = 0; i < sliders.length; i++) {
-    const slider = sliders[i];
-    const newValue = adjustedValues[i];
-    slider.value = newValue;
-    const percentageElement = document.getElementById(
-      `percentage${slider.dataset.variant}`
-    );
-    if (percentageElement) {
-      percentageElement.textContent = `${newValue}%`;
-    }
-  }
+  return newDist;
 }
 
-function resetToEqualDistribution() {
-  hasCustomTrafficDistribution = false;
-  let totalToDistribute = 100;
-  let slidersToUpdate = [];
-  const allSliders = document.querySelectorAll(".variant-range");
-  slidersToUpdate = Array.from(allSliders);
-  const equalPercentage = Math.floor(
-    totalToDistribute / slidersToUpdate.length
+function renderDataTables(state, results) {
+  const hasValidResults =
+    results && results.mdeTableData && results.timeTableData;
+  renderTableBody(
+    mdeTable.querySelector("tbody"),
+    state.mdeTableRows,
+    hasValidResults ? results.mdeTableData : null,
+    "mde-input"
   );
-  const remainderPercentage =
-    totalToDistribute - equalPercentage * slidersToUpdate.length;
-  slidersToUpdate.forEach((slider, index) => {
-    const percentage =
-      index === 0 ? equalPercentage + remainderPercentage : equalPercentage;
-    slider.value = percentage;
-    const variantLetter = slider.dataset.variant;
-    const percentageElement = document.getElementById(
-      `percentage${variantLetter}`
-    );
-    if (percentageElement) {
-      percentageElement.textContent = `${percentage}%`;
-    }
-  });
-  updateCalculation();
+  renderTableBody(
+    timeTable.querySelector("tbody"),
+    state.timeTableRows,
+    hasValidResults ? results.timeTableData : null,
+    "time-input"
+  );
 }
 
-function updateCalculation() {
-  const errors = validateInputs();
-  const isValid = handleValidationErrors(errors);
-  if (!isValid) {
+function renderTableBody(tbodyEl, rowInputData, rowResultData, inputClass) {
+  if (!rowResultData) {
+    tbodyEl.innerHTML = "";
     return;
   }
-  const params = getCalculationParameters();
-  const mdeResults = calculateMDE(
-    params.baseline,
-    params.mde,
-    params.isRelativeMode,
-    params.testType
-  );
-  const sampleSizePerVariant = calculateSampleSize(
-    mdeResults.baselineRate,
-    mdeResults.relMDE,
-    params.alpha,
-    params.power,
-    params.variantCount,
-    params.buffer,
-    params.testType,
-    params.correctionMethod
-  );
-  const distributionInfo = getVariantDistributions(params.variantCount);
-  const effectiveVisitors = params.visitors * (params.trafficFlow / 100);
-  const durationDays = calculateTestDuration(
-    sampleSizePerVariant,
-    effectiveVisitors,
-    params.variantCount,
-    distributionInfo
-  );
-  updateResultsDisplay({
-    duration: durationDays,
-    baselineRate: params.baseline,
-    targetRate: mdeResults.targetRate * 100,
-    samplePerVariant: sampleSizePerVariant,
-    variantCount: params.variantCount,
-    isRelativeMode: params.isRelativeMode,
-    mdePct: params.mde,
+  const { elementToPositionMap, valueToElementMap, existingRows } = cacheExistingRows(tbodyEl, inputClass);
+  const finalElements = [];
+  const renderedElements = new Set();
+  rowInputData.forEach((inputValue, index) => {
+    const result = rowResultData[index];
+    const availableElements = valueToElementMap.get(String(inputValue));
+    const rowToReuse = availableElements?.length > 0 ? availableElements.shift() : null;
+    if (rowToReuse) {
+      renderedElements.add(rowToReuse);
+      updateRowContent(rowToReuse, result, inputClass);
+      rowToReuse.querySelector(`.${inputClass}`).dataset.index = index;
+      rowToReuse.querySelector(".delete-row")?.setAttribute("data-index", index);
+      finalElements.push(rowToReuse);
+    } else {
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = createRowHtml(inputValue, result, index, inputClass);
+      const editableCell = newRow.querySelector(".editable");
+      if (editableCell) addDeleteButton(editableCell, index);
+      finalElements.push(newRow);
+    }
   });
-  updateMDEToTimeTable();
-  updateTimeToMDETable();
-  checkAdvancedDefaults();
+  existingRows.forEach((row) => {
+    if (!renderedElements.has(row)) {
+      row.remove();
+    }
+  });
+  tbodyEl.innerHTML = "";
+  finalElements.forEach((el) => tbodyEl.appendChild(el));
+  const activeElement = document.activeElement;
+  const isInputFocused = activeElement?.classList.contains(inputClass);
+  const wasReorderOnly = existingRows.length === finalElements.length;
+  if (!isInputFocused && wasReorderOnly) {
+    animateReordering(finalElements, elementToPositionMap);
+  }
 }
 
-function validateInputs() {
-  const errors = [];
-  const checkNumberRange = (
-    input,
-    name,
-    {
-      min = -Infinity,
-      max = Infinity,
-      minInclusive = false,
-      maxInclusive = false,
+function cacheExistingRows(tbodyEl, inputClass) {
+  const elementToPositionMap = new Map();
+  const valueToElementMap = new Map();
+  const existingRows = Array.from(tbodyEl.children);
+  existingRows.forEach((row) => {
+    const input = row.querySelector(`.${inputClass}`);
+    if (!input) return;
+    elementToPositionMap.set(row, row.getBoundingClientRect());
+    const value = input.value;
+    if (!valueToElementMap.has(value)) {
+      valueToElementMap.set(value, []);
     }
-  ) => {
-    const value = parseFloat(input.value);
-    if (isNaN(value)) {
-      errors.push({ input, message: `${name} must be a number.` });
-      return NaN;
-    }
-    const minCondition = minInclusive ? value < min : value <= min;
-    const maxCondition = maxInclusive ? value > max : value >= max;
-    if (minCondition || maxCondition) {
-      errors.push({
-        input,
-        message: `${name} must be between ${min} and ${max}.`,
+    valueToElementMap.get(value).push(row);
+  });
+  return { elementToPositionMap, valueToElementMap, existingRows };
+}
+
+function updateRowContent(row, result, inputClass) {
+  if (inputClass === "mde-input") {
+    row.children[1].textContent = result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—";
+    row.children[2].textContent = result ? `${result.durationDays.toLocaleString()} days` : "—";
+    row.children[3].textContent = result ? result.sampleSize.toLocaleString() : "—";
+  } else {
+    row.children[1].textContent = result ? result.visitorsPerVariant.toLocaleString() : "—";
+    row.children[2].textContent = result ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}` : "—";
+    row.children[3].textContent = result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—";
+  }
+}
+
+function createRowHtml(inputValue, result, index, inputClass) {
+  if (inputClass === "mde-input") {
+    return `
+      <td class="editable"><div class="input-wrapper"><input type="number" class="mde-input" value="${inputValue}" step="0.1" data-index="${index}"></div></td>
+      <td>${result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—"}</td>
+      <td class="highlight">${result ? `${result.durationDays.toLocaleString()} days` : "—"}</td>
+      <td>${result ? result.sampleSize.toLocaleString() : "—"}</td>
+    `;
+  } else {
+    return `
+      <td class="editable"><div class="input-wrapper"><input type="number" class="time-input" value="${inputValue}" min="1" step="1" data-index="${index}"></div></td>
+      <td>${result ? result.visitorsPerVariant.toLocaleString() : "—"}</td>
+      <td class="highlight">${result ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}` : "—"}</td>
+      <td>${result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—"}</td>
+    `;
+  }
+}
+
+function animateReordering(elements, positionMap) {
+  elements.forEach((row) => {
+    const firstPosition = positionMap.get(row);
+    if (!firstPosition) return;
+    const lastPosition = row.getBoundingClientRect();
+    const deltaX = firstPosition.left - lastPosition.left;
+    const deltaY = firstPosition.top - lastPosition.top;
+    if (Math.abs(deltaY) < 0.5 && Math.abs(deltaX) < 0.5) return;
+    requestAnimationFrame(() => {
+      row.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+      row.style.transition = "transform 0s";
+      requestAnimationFrame(() => {
+        row.style.transform = "";
+        row.style.transition = "";
       });
-    }
-    return value;
-  };
-  const visitorsNum = parseFloat(visitorsInput.value);
-  if (isNaN(visitorsNum) || visitorsNum <= 0) {
-    errors.push({
-      input: visitorsInput,
-      message: "Daily visitors must be a positive number greater than 0.",
     });
-  }
-  const baselineNum = checkNumberRange(baselineInput, "Baseline CR", {
-    min: 0,
-    max: 100,
   });
-  checkNumberRange(alphaInput, "Significance level (alpha)", {
-    min: 0,
-    max: 1,
-  });
-  checkNumberRange(powerInput, "Statistical power", { min: 0, max: 1 });
-  checkNumberRange(trafficFlowInput, "Traffic flow", {
-    min: 0,
-    max: 100,
-    maxInclusive: true,
-  });
+}
 
-  const bufferNum = parseFloat(bufferInput.value);
-  if (isNaN(bufferNum)) {
-    errors.push({ input: bufferInput, message: "Buffer must be a number." });
-  } else if (bufferNum < 0) {
-    errors.push({ input: bufferInput, message: "Buffer cannot be negative." });
-  }
+function addDeleteButton(cell, index) {
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "delete-row";
+  deleteBtn.textContent = "×";
+  deleteBtn.setAttribute("aria-label", "Delete row");
+  deleteBtn.setAttribute("tabindex", "-1");
+  deleteBtn.dataset.index = index;
+  cell.appendChild(deleteBtn);
+}
 
-  const mdeNum = parseFloat(mdeInput.value);
-  const testType = document.querySelector(
-    'input[name="testType"]:checked'
-  ).value;
-  const isRelativeMode = relativeMode.checked;
-  const mdeLabel = getLabelsForTestType(testType).label;
-  if (isNaN(mdeNum)) {
-    errors.push({ input: mdeInput, message: `"${mdeLabel}" must be a number.` });
-    return errors;
-  }
-  if (mdeNum === 0) {
-    errors.push({ input: mdeInput, message: `"${mdeLabel}" cannot be zero.` });
-    return errors;
-  }
+function getTestTypeExplanation(state, results) {
+  const { testType, isRelativeMode, mde, baseline } = state;
+  const { duration } = results;
+  const timeText = `<span class="highlight">${formatTimeEstimate(
+    duration
+  )}</span>`;
+  const mdeText = `<span class="highlight">${
+    isRelativeMode ? `${mde}%` : `${mde} percentage points`
+  }</span>`;
+  // Calculate the absolute effect size in percentage points.
+  // For superiority, MDE can be negative (e.g. when the goal is to reduce a metric).
+  const effectSize = isRelativeMode ? baseline * (mde / 100) : mde;
+  // For symmetrical ranges (equivalence/two-tailed), we need the absolute margin.
+  const margin = Math.abs(effectSize);
+  const bounds = {
+    from: `<span class="highlight">${baseline.toFixed(2)}%</span>`,
+    // 'to' reflects the actual directional change for superiority.
+    to: `<span class="highlight">${(baseline + effectSize).toFixed(2)}%</span>`,
+    // 'upper' and 'lower' create a symmetrical range for other test types.
+    upper: `<span class="highlight">${(baseline + margin).toFixed(2)}%</span>`,
+    lower: `<span class="highlight">${(baseline - margin).toFixed(2)}%</span>`,
+  };
   switch (testType) {
     case "superiority":
-      const targetRate = isRelativeMode
-        ? baselineNum * (1 + mdeNum / 100)
-        : baselineNum + mdeNum;
-      if (mdeNum > 0 && targetRate >= 100) {
-        errors.push({
-          input: mdeInput,
-          message: `An improvement results in an invalid rate of ${targetRate.toFixed(
-            2
-          )}%.`,
-        });
-      } else if (mdeNum < 0 && targetRate <= 0) {
-        errors.push({
-          input: mdeInput,
-          message: `A reduction results in an invalid rate of ${targetRate.toFixed(
-            2
-          )}%.`,
-        });
-      }
-      break;
-    default:
-      if (mdeNum < 0) {
-        errors.push({
-          input: mdeInput,
-          message: `"${mdeLabel}" must be a positive number.`,
-        });
-        break;
-      }
-      if (testType !== "non-inferiority") {
-        const upperBound = isRelativeMode
-          ? baselineNum * (1 + mdeNum / 100)
-          : baselineNum + mdeNum;
-        if (upperBound >= 100) {
-          errors.push({
-            input: mdeInput,
-            message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
-              2
-            )}%.`,
-          });
-        }
-      }
-      if (testType !== "two-tailed") {
-        const lowerBound = isRelativeMode
-          ? baselineNum * (1 - mdeNum / 100)
-          : baselineNum - mdeNum;
-        if (lowerBound <= 0) {
-          errors.push({
-            input: mdeInput,
-            message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
-              2
-            )}%.`,
-          });
-        }
-      }
-      break;
-  }
-  return errors;
-}
-
-function handleValidationErrors(errors) {
-  errorList.innerHTML = "";
-  allInputs.forEach((input) => input.classList.remove("input-error"));
-  if (errors.length === 0) {
-    errorContainer.classList.add("hidden");
-    return true;
-  } else {
-    errors.forEach((error) => {
-      const li = document.createElement("li");
-      li.textContent = error.message;
-      errorList.appendChild(li);
-      error.input.classList.add("input-error");
-    });
-    errorContainer.classList.remove("hidden");
-    return false;
-  }
-}
-
-function getVariantDistributions(variantCount) {
-  const variantDistributions = [];
-  let isDistributionUnequal = false;
-  let lowestPercentage = 1.0;
-  for (let i = 0; i < variantCount; i++) {
-    const letter = String.fromCharCode(65 + i);
-    const slider = document.getElementById(`slider${letter}`);
-    if (slider) {
-      const percentage = parseInt(slider.value) / 100;
-      variantDistributions.push(percentage);
-      if (i > 0 && percentage !== variantDistributions[0]) {
-        isDistributionUnequal = true;
-      }
-      if (percentage < lowestPercentage) {
-        lowestPercentage = percentage;
-      }
-    }
-  }
-  return {
-    distributions:
-      variantDistributions.length === variantCount ? variantDistributions : [],
-    isUnequal: isDistributionUnequal,
-    lowestPercentage: lowestPercentage,
-  };
-}
-
-function calculateTestDuration(
-  sampleSizePerVariant,
-  effectiveVisitors,
-  variantCount,
-  distributionInfo
-) {
-  let durationDays = 0;
-  if (effectiveVisitors > 0) {
-    const { distributions, isUnequal, lowestPercentage } = distributionInfo;
-    if (isUnequal && distributions.length === variantCount) {
-      // For unequal distribution, the variant with lowest percentage determines duration.
-      const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
-      durationDays = Math.ceil(
-        sampleSizePerVariant / lowestVariantDailyVisitors
-      );
-    } else {
-      const variantDailyVisitors = effectiveVisitors / variantCount;
-      durationDays = Math.ceil(sampleSizePerVariant / variantDailyVisitors);
-    }
-  }
-  return durationDays;
-}
-
-function updateResultsDisplay(results) {
-  durationValueElem.textContent = Math.round(results.duration).toLocaleString();
-  sampleValueElem.textContent = Math.round(
-    results.samplePerVariant
-  ).toLocaleString();
-  const sampleSubtitle = document.querySelector(
-    ".result-card:nth-child(2) .result-subtitle"
-  );
-  if (sampleSubtitle) {
-    sampleSubtitle.textContent = "per variant";
-  }
-  for (let i = 0; i < results.variantCount; i++) {
-    const letter = String.fromCharCode(65 + i);
-    const variantValueElem = document.getElementById(`variantValue${letter}`);
-    if (variantValueElem) {
-      variantValueElem.textContent = Math.round(
-        results.samplePerVariant
-      ).toLocaleString();
-    }
-  }
-  timeEstimateElem.textContent = formatTimeEstimate(results.duration);
-  if (results.isRelativeMode) {
-    relativeChangeElem.textContent = `${results.mdePct}%`;
-  } else {
-    relativeChangeElem.textContent = `${results.mdePct} percentage points`;
-  }
-  fromValueElem.textContent = results.baselineRate.toFixed(2);
-  toValueElem.textContent = results.targetRate.toFixed(2);
-  const testType = document.querySelector(
-    'input[name="testType"]:checked'
-  ).value;
-  const explanationElem = document.getElementById("explanation");
-  if (explanationElem) {
-    explanationElem.innerHTML = getTestTypeExplanation(
-      testType,
-      results.duration,
-      results.isRelativeMode
-        ? `${results.mdePct}%`
-        : `${results.mdePct} percentage points`,
-      results.baselineRate.toFixed(2),
-      results.targetRate.toFixed(2)
-    );
-  }
-}
-
-function getTestTypeExplanation(
-  testType,
-  duration,
-  relativeChange,
-  fromValue,
-  toValue
-) {
-  const timeText = formatTimeEstimate(duration);
-  if (testType === "non-inferiority") {
-    const params = getCalculationParameters();
-    const baseline = parseFloat(fromValue);
-    let worstAcceptable;
-    if (params.isRelativeMode) {
-      const mdeDecimal = params.mde / 100;
-      worstAcceptable = baseline * (1 - mdeDecimal);
-    } else {
-      worstAcceptable = baseline - params.mde;
-    }
-    return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove the new rate is not worse than <span class="highlight">${worstAcceptable.toFixed(
-      2
-    )}%</span>.`;
-  }
-  switch (testType) {
+      return `The experiment will need to run for ${timeText} to detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to}).`;
+    case "non-inferiority":
+      // The 'lower' bound represents the worst acceptable outcome.
+      return `The experiment will need to run for ${timeText} to prove the new rate is not worse than ${bounds.lower}.`;
     case "two-tailed":
-      const lowerValue = (
-        parseFloat(fromValue) -
-        Math.abs(parseFloat(toValue) - parseFloat(fromValue))
-      ).toFixed(2);
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> change in either direction (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>% or to <span>${lowerValue}</span>%).`;
-    case "superiority":
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
+      return `The experiment will need to run for ${timeText} to detect a ${mdeText} change in either direction (from ${bounds.from} to ${bounds.upper} or to ${bounds.lower}).`;
     case "equivalence":
-      const baseline = parseFloat(fromValue);
-      const upperBound = parseFloat(toValue);
-      const margin = upperBound - baseline;
-      const lowerBound = (baseline - margin).toFixed(2);
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to prove both variants perform equivalently, with the new rate falling within the range of <span class="highlight">${lowerBound}%</span> to <span class="highlight">${toValue}%</span>.`;
-          default:
-      return `The experiment will need to run for <span class="highlight">${timeText}</span> to detect a <span class="highlight">${relativeChange}</span> improvement (from <span id="fromValue">${fromValue}</span>% to <span id="toValue">${toValue}</span>%).`;
+      return `The experiment will need to run for ${timeText} to prove both variants perform equivalently, with the new rate falling within the range of ${bounds.lower} to ${bounds.upper}.`;
+    default:
+      return `The experiment will need to run for ${timeText} to detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to}).`;
   }
 }
 
@@ -865,182 +1118,60 @@ function formatTimeEstimate(days) {
   }
 }
 
-function syncRangeWithInput(input, rangeInput) {
-  rangeInput.value = input.value;
-  updateCalculation();
-}
-
-function syncInputWithRange(rangeInput, input) {
-  input.value = rangeInput.value;
-  updateCalculation();
-}
-
-function initializeMDEToTimeTable() {
-  initializeTable(
-    mdeTableBody,
-    DEFAULT_MDES,
-    addMDERow,
-    createDeleteButtons,
-    setupInputListeners
-  );
-}
-
-function initializeTimeToMDETable() {
-  initializeTable(
-    timeTableBody,
-    DEFAULT_TIMES,
-    addTimeRow,
-    createDeleteButtons,
-    setupInputListeners
-  );
-}
-
-function initializeTable(
-  tableBody,
-  defaultValues,
-  addRowFunction,
-  deleteButtonFunction,
-  inputListenerFunction
-) {
-  tableBody.innerHTML = "";
-  defaultValues.forEach((value) => {
-    addRowFunction(null, value);
-  });
-  deleteButtonFunction(tableBody);
-  inputListenerFunction(tableBody);
-}
-
-function addMDERow(clickEvent, defaultMDE = DEFAULT_MDE) {
-  addTableRow(
-    mdeTableBody,
-    "mde-input",
-    defaultMDE,
-    calculateMdeResults,
-    clickEvent
-  );
-  setupInputListeners(mdeTableBody);
-}
-
-function addTimeRow(clickEvent, defaultDays = DEFAULT_DAYS) {
-  addTableRow(
-    timeTableBody,
-    "time-input",
-    defaultDays,
-    calculateTimeResults,
-    clickEvent
-  );
-  setupInputListeners(timeTableBody);
-}
-
-function addTableRow(
-  tableBody,
-  inputClass,
-  defaultValue,
-  calculateFunction,
-  triggeringEvent
-) {
-  const results = calculateFunction(defaultValue);
-  const newRow = document.createElement("tr");
-  if (inputClass === "mde-input") {
-    newRow.innerHTML = `
-          <td class="editable">
-              <input type="number" class="${inputClass}" value="${defaultValue}" step="0.1" aria-label="Δ value">
-          </td>
-          <td>${results.baseline.toFixed(1)}% → ${results.targetRate.toFixed(
-      2
-    )}%</td>
-          <td class="highlight">${results.durationDays} days</td>
-          <td>${results.sampleSize.toLocaleString()}</td>
-      `;
-  } else {
-    newRow.innerHTML = `
-          <td class="editable">
-              <input type="number" class="${inputClass}" value="${defaultValue}" min="1" step="1" aria-label="Duration in days">
-          </td>
-          <td>${results.visitorsPerVariant.toLocaleString()}</td>
-          <td class="highlight">${results.mde.toFixed(2)}${
-      results.isRelative ? "%" : " pp"
-    }</td>
-          <td>${results.baseline.toFixed(1)}% → ${results.targetRate.toFixed(
-      2
-    )}%</td>
-      `;
-  }
-  tableBody.appendChild(newRow);
-  const cell = newRow.querySelector(".editable");
-  addDeleteButton(cell, newRow, tableBody);
-  if (triggeringEvent) {
-    const newInput = newRow.querySelector(`.${inputClass}`);
-    if (newInput) {
-      newInput.focus();
-      newInput.select();
-    }
-  }
-  return newRow;
-}
-
-function addDeleteButton(cell, row, tableBody) {
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "delete-row";
-  deleteBtn.textContent = "×";
-  deleteBtn.setAttribute("aria-label", "Delete row");
-  deleteBtn.setAttribute("tabindex", "-1");
-  deleteBtn.onclick = function () {
-    row.remove();
-  };
-  cell.appendChild(deleteBtn);
-}
-
-function setupRowListeners(row, inputClass, updateFunction) {
-  const input = row.querySelector(`.${inputClass}`);
-  const tableBody = row.closest("tbody");
-  input.addEventListener("blur", function () {
-    debouncedSort(tableBody, inputClass);
-  });
-  input.addEventListener("change", function () {
-    updateFunction(row);
-    debouncedSort(tableBody, inputClass);
-  });
-  input.addEventListener("input", function () {
-    clearTimeout(sortDebounceTimer);
-    clearRowHighlights();
-  });
-}
-
 function downloadTableAsCSV(tableId) {
-  const { content, filename } = createCSVContentFromTable(
-    document.getElementById(tableId)
+  const stateKey = tableId === "mdeTable" ? "mdeTableRows" : "timeTableRows";
+  const dataKey = tableId === "mdeTable" ? "mdeTableData" : "timeTableData";
+  const results = calculateAllResults(calculatorState);
+  if (!results) {
+    alert("Please fix the errors before downloading.");
+    return;
+  }
+  const { content, filename } = createCSVContentFromData(
+    tableId,
+    calculatorState[stateKey],
+    results[dataKey]
   );
   downloadCSV(content, filename);
 }
 
-function createCSVContentFromTable(table) {
+function createCSVContentFromData(tableId, rowData, resultsData) {
+  const table = document.getElementById(tableId);
   const headers = Array.from(table.querySelectorAll("thead th"))
     .map((th) => th.textContent.trim())
     .join(";");
-
-  const tableBody = table.querySelector("tbody");
-  const inputClass = table.id === "mdeTable" ? "mde-input" : "time-input";
-
-  const rows = Array.from(tableBody.querySelectorAll("tr"))
-    .map((row) => {
-      const input = row.querySelector(`.${inputClass}`);
-      const inputValue = input ? input.value : "";
-      const restOfCells = Array.from(
-        row.querySelectorAll("td:not(:first-child)")
-      ).map((td) => {
-        return td.textContent.trim().replace(/(\d),(\d)/g, "$1$2");
-      });
-      return [inputValue, ...restOfCells].join(";");
+  const rows = rowData
+    .map((rowItem, index) => {
+      const result = resultsData[index];
+      if (!result) return "";
+      if (tableId === "mdeTable") {
+        return [
+          rowItem,
+          `${result.baseline.toFixed(1)}% -> ${result.targetRate.toFixed(2)}%`,
+          result.durationDays,
+          result.sampleSize,
+        ].join(";");
+      } else {
+        return [
+          rowItem,
+          result.visitorsPerVariant,
+          `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`,
+          `${result.baseline.toFixed(1)}% -> ${result.targetRate.toFixed(2)}%`,
+        ].join(";");
+      }
     })
     .join("\n");
   const csvContent = `${headers}\n${rows}`;
-  const tableType = table.id === "mdeTable" ? "mde" : "time";
-  const now = new Date();
-  const dateStr = now.toISOString().split("T")[0];
-  const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
-  const filename = `ab-test-plan-${tableType}-${dateStr}-${timeStr}.csv`;
-  return { content: csvContent, filename: filename };
+  const dateStr = new Date().toISOString().split("T")[0];
+  const planName = calculatorState.planName.trim();
+  const sanitizedName = planName
+    ? planName.replace(/[^a-zA-Z0-9\-_]/g, "-").replace(/-+/g, "-")
+    : "";
+  const tableType =
+    tableId === "mdeTable" ? "effect-to-days" : "days-to-effect";
+  const filename = sanitizedName
+    ? `${sanitizedName}-${tableType}-${dateStr}.csv`
+    : `${CSVPREFIX}-${tableType}-${dateStr}.csv`;
+  return { content: csvContent, filename };
 }
 
 function downloadCSV(content, filename) {
@@ -1085,145 +1216,6 @@ function downloadCSV(content, filename) {
   }
 }
 
-function calculateMdeResults(mdeValue) {
-  const params = getCalculationParameters();
-  const mdeResults = calculateMDE(
-    params.baseline,
-    mdeValue,
-    params.isRelativeMode,
-    params.testType
-  );
-  const sampleSize = calculateSampleSize(
-    mdeResults.baselineRate,
-    mdeResults.relMDE,
-    params.alpha,
-    params.power,
-    params.variantCount,
-    params.buffer,
-    params.testType,
-    params.correctionMethod
-  );
-  const distributionInfo = getVariantDistributions(params.variantCount);
-  const effectiveVisitors = params.visitors * (params.trafficFlow / 100);
-  const durationDays = calculateTestDuration(
-    sampleSize,
-    effectiveVisitors,
-    params.variantCount,
-    distributionInfo
-  );
-  return {
-    baseline: params.baseline,
-    targetRate: mdeResults.targetRate * 100,
-    sampleSize: sampleSize,
-    durationDays: durationDays,
-  };
-}
-
-function getCalculationParameters() {
-  return {
-    visitors: parseFloat(visitorsInput.value) || 0,
-    baseline: parseFloat(baselineInput.value) || 0,
-    mde: parseFloat(mdeInput.value) || 0,
-    variantCount: parseInt(variantsSelect.value),
-    alpha: parseFloat(alphaInput.value) || 0.05,
-    power: parseFloat(powerInput.value) || 0.8,
-    testType: document.querySelector('input[name="testType"]:checked').value,
-    trafficFlow: parseFloat(trafficFlowInput.value) || 100,
-    buffer: parseFloat(bufferInput.value) || 0,
-    isRelativeMode: relativeMode.checked,
-    correctionMethod: correctionSelect.value,
-  };
-}
-
-function calculateMDEFromDuration(days) {
-  const params = getCalculationParameters();
-  const effectiveVisitors = params.visitors * (params.trafficFlow / 100);
-  const distributionInfo = getVariantDistributions(params.variantCount);
-  let sampleSizePerVariant;
-  if (
-    distributionInfo.isUnequal &&
-    distributionInfo.distributions.length === params.variantCount
-  ) {
-    const lowestVariantDailyVisitors =
-      effectiveVisitors * distributionInfo.lowestPercentage;
-    sampleSizePerVariant = days * lowestVariantDailyVisitors;
-  } else {
-    const variantDailyVisitors = effectiveVisitors / params.variantCount;
-    sampleSizePerVariant = days * variantDailyVisitors;
-  }
-  return calculateMDEFromSampleSize(sampleSizePerVariant, params);
-}
-
-function updateMDEToTimeTable() {
-  const rows = mdeTableBody.querySelectorAll("tr");
-  rows.forEach((row) => updateRowCalculations(row));
-}
-
-function updateTimeToMDETable() {
-  const rows = timeTableBody.querySelectorAll("tr");
-  rows.forEach((row) => {
-    if (row.querySelector("input.time-input")) {
-      updateTimeRowCalculations(row);
-    }
-  });
-}
-
-function updateRowCalculations(row) {
-  const mdeInput = row.querySelector(".mde-input");
-  const mdeValue = parseFloat(mdeInput.value) || 10;
-  const results = calculateMdeResults(mdeValue);
-  const cells = row.querySelectorAll("td");
-  cells[1].textContent = `${results.baseline.toFixed(
-    1
-  )}% → ${results.targetRate.toFixed(2)}%`;
-  cells[2].textContent = `${results.durationDays.toLocaleString()} days`;
-  cells[3].textContent = results.sampleSize.toLocaleString();
-}
-
-function createDeleteButtons(tableBody) {
-  const rows = tableBody.querySelectorAll("tr");
-  rows.forEach((row) => {
-    const cell = row.querySelector(".editable");
-    const existingBtn = cell.querySelector(".delete-row");
-    if (existingBtn) {
-      existingBtn.remove();
-    }
-    addDeleteButton(cell, row, tableBody);
-  });
-}
-
-function checkAdvancedDefaults() {
-  const currentValues = {
-    alpha: parseFloat(alphaInput.value),
-    power: parseFloat(powerInput.value),
-    testType: document.querySelector('input[name="testType"]:checked').value,
-    correction: correctionSelect.value,
-    trafficFlow: parseFloat(trafficFlowInput.value),
-    buffer: parseFloat(bufferInput.value),
-  };
-  const modifications = [];
-  Object.entries(ADVANCED_DEFAULTS).forEach(([key, defaultValue]) => {
-    if (currentValues[key] !== defaultValue) {
-      modifications.push(
-        getModificationDescription(key, currentValues[key], defaultValue)
-      );
-    }
-  });
-  if (hasCustomTrafficDistribution) {
-    modifications.push("Traffic distribution: Custom");
-  }
-  const hasModifications = modifications.length > 0;
-  if (hasModifications) {
-    advancedStatusDot.classList.add("active");
-    advancedHeader.classList.remove("no-modifications");
-    tooltipModifications.innerHTML = modifications.join("<br>");
-  } else {
-    advancedStatusDot.classList.remove("active");
-    advancedHeader.classList.add("no-modifications");
-    tooltipModifications.innerHTML = "";
-  }
-}
-
 function getModificationDescription(key, currentValue) {
   const descriptions = {
     alpha: `Significance level: ${currentValue}`,
@@ -1240,7 +1232,7 @@ function getModificationDescription(key, currentValue) {
 
 function formatTestType(value) {
   const types = {
-    "superiority": "Superiority",
+    superiority: "Superiority",
     "two-tailed": "Two-tailed",
     "non-inferiority": "Non-inferiority",
     equivalence: "Equivalence",
@@ -1257,243 +1249,68 @@ function formatCorrection(value) {
   return corrections[value] || value;
 }
 
-function setupInputListeners(tableBody) {
-  const firstInput = tableBody.querySelector("input");
-  if (!firstInput) return;
-  const inputClass = firstInput.className;
-  tableBody.querySelectorAll(`.${inputClass}`).forEach((input) => {
-    input.addEventListener("blur", function () {
-      const currentInput = this;
-      const tableBodyElement = currentInput.closest("tbody");
-      const row = currentInput.closest("tr");
-      if (currentInput.value.trim() === "") {
-        row.remove();
-      }
-      debouncedSort(tableBodyElement, inputClass);
-    });
-    input.addEventListener("change", function () {
-      const row = this.closest("tr");
-      const tableBodyElement = this.closest("tbody");
-      const updateFunction =
-        inputClass === "mde-input"
-          ? updateMDERowCalculations
-          : updateTimeRowCalculations;
-      updateFunction(row);
-      debouncedSort(tableBodyElement, inputClass);
-    });
-    input.addEventListener("input", function () {
-      clearTimeout(sortDebounceTimer);
-      clearRowHighlights();
-    });
-  });
-}
-
-function updateMDERowCalculations(row) {
-  const mdeInput = row.querySelector(".mde-input");
-  const mdeValue = parseFloat(mdeInput.value) || 10;
-  const results = calculateMdeResults(mdeValue);
-  const cells = row.querySelectorAll("td");
-  cells[1].textContent = `${results.baseline.toFixed(
-    1
-  )}% → ${results.targetRate.toFixed(2)}%`;
-  cells[2].textContent = `${results.durationDays.toLocaleString()} days`;
-  cells[3].textContent = results.sampleSize.toLocaleString();
-}
-
-function updateTimeRowCalculations(row) {
-  const timeInput = row.querySelector(".time-input");
-  const timeValue = parseFloat(timeInput.value) || 30;
-  const results = calculateTimeResults(timeValue);
-  const cells = row.querySelectorAll("td");
-  cells[1].textContent = Math.round(
-    results.visitorsPerVariant
-  ).toLocaleString();
-  cells[2].textContent = `${results.mde.toFixed(2)}${
-    results.isRelative ? "%" : " pp"
-  }`;
-  cells[3].textContent = `${results.baseline.toFixed(
-    1
-  )}% → ${results.targetRate.toFixed(2)}%`;
-}
-
-function calculateTimeResults(days) {
-  const params = getCalculationParameters();
-  const mde = calculateMDEFromDuration(days);
-  const effectiveVisitors = params.visitors * (params.trafficFlow / 100);
-  const distributionInfo = getVariantDistributions(params.variantCount);
-  let visitorsPerVariant;
-  if (
-    distributionInfo.isUnequal &&
-    distributionInfo.distributions.length === params.variantCount
-  ) {
-    const lowestVariantDailyVisitors =
-      effectiveVisitors * distributionInfo.lowestPercentage;
-    visitorsPerVariant = days * lowestVariantDailyVisitors;
-  } else {
-    const variantDailyVisitors = effectiveVisitors / params.variantCount;
-    visitorsPerVariant = days * variantDailyVisitors;
-  }
-  const mdeInfo = calculateMDE(
-    params.baseline,
-    mde,
-    params.isRelativeMode,
-    params.testType
-  );
-  const targetRate = mdeInfo.targetRate * 100;
-  return {
-    baseline: params.baseline,
-    targetRate: targetRate,
-    mde: mde,
-    isRelative: params.isRelativeMode,
-    visitorsPerVariant: visitorsPerVariant,
-  };
-}
-
-function clearRowHighlights() {
-  if (mdeTableBody) {
-    mdeTableBody
-      .querySelectorAll("tr.row-moving")
-      .forEach((row) => row.classList.remove("row-moving"));
-  }
-  if (timeTableBody) {
-    timeTableBody
-      .querySelectorAll("tr.row-moving")
-      .forEach((row) => row.classList.remove("row-moving"));
-  }
-}
-
-async function sortTable(tableBody, inputClass) {
-  if (
-    document.activeElement &&
-    document.activeElement.classList.contains(inputClass)
-  ) {
-    return;
-  }
-  const rows = Array.from(tableBody.querySelectorAll("tr"));
-  const sortedRows = [...rows].sort((a, b) => {
-    const valueA = parseFloat(a.querySelector(`.${inputClass}`).value || 0);
-    const valueB = parseFloat(b.querySelector(`.${inputClass}`).value || 0);
-    return valueA - valueB;
-  });
-  rows.forEach((row) => row.classList.remove("row-moving"));
-  rows.forEach((row, currentIndex) => {
-    const newIndex = sortedRows.indexOf(row);
-    if (currentIndex !== newIndex) {
-      row.classList.add("row-moving");
-    }
-  });
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  rows.sort((a, b) => {
-    const valueA = parseFloat(a.querySelector(`.${inputClass}`).value || 0);
-    const valueB = parseFloat(b.querySelector(`.${inputClass}`).value || 0);
-    return valueA - valueB;
-  });
-  rows.forEach((row) => tableBody.appendChild(row));
-  setTimeout(() => {
-    tableBody
-      .querySelectorAll("tr.row-moving")
-      .forEach((row) => row.classList.remove("row-moving"));
-  }, 600);
-}
-
-function debouncedSort(tableBody, inputClass) {
-  clearTimeout(sortDebounceTimer);
-  sortDebounceTimer = setTimeout(() => {
-    sortTable(tableBody, inputClass);
-  }, sortDelay);
-}
-
-function encodeParametersToURL() {
+function encodeStateToURL(state) {
   const params = {
-    bl: baselineInput.value,
-    mde: mdeInput.value,
-    rel: relativeMode.checked ? 1 : 0,
-    var: variantsSelect.value,
-    tf: trafficFlowInput.value,
-    bf: bufferInput.value,
-    al: alphaInput.value,
-    pw: powerInput.value,
-    tt: document.querySelector('input[name="testType"]:checked').value,
-    cr: correctionSelect.value,
-    vs: visitorsInput.value,
+    bl: state.baseline,
+    mde: state.mde,
+    rel: state.isRelativeMode ? 1 : 0,
+    var: state.variants,
+    tf: state.trafficFlow,
+    bf: state.buffer,
+    al: state.alpha,
+    pw: state.power,
+    tt: state.testType,
+    cr: state.correction,
+    vs: state.visitors,
+    name: state.planName,
+    tab:
+      state.activeTab === "tab-single"
+        ? null
+        : state.activeTab.replace("tab-", ""),
   };
-  const experimentName = document.getElementById("experimentName").value.trim();
-  if (experimentName) {
-    params.name = experimentName;
+  if ((state.variants > 2 || state.hasCustomTrafficDistribution) && state.trafficDistribution && state.trafficDistribution.length > 0) {
+    params.dist = state.trafficDistribution.join("_");
   }
-  if (tabSingle.checked) {
-    params.tab = "single";
-  } else if (tabTable.checked) {
-    params.tab = "table";
-  } else if (tabTime.checked) {
-    params.tab = "time";
+  if (
+    state.activeTab === "tab-table" &&
+    state.mdeTableRows &&
+    state.mdeTableRows.length > 0
+  ) {
+    params.tblmde = state.mdeTableRows.join("_");
+  } else if (
+    state.activeTab === "tab-time" &&
+    state.timeTableRows &&
+    state.timeTableRows.length > 0
+  ) {
+    params.tbltime = state.timeTableRows.join("_");
   }
-  const distribution = [];
-  let isUneven = false;
-  for (let i = 0; i < parseInt(variantsSelect.value); i++) {
-    const letter = String.fromCharCode(65 + i);
-    const slider = document.getElementById(`slider${letter}`);
-    if (slider) {
-      distribution.push(slider.value);
-      if (i > 0 && slider.value !== document.getElementById("sliderA").value) {
-        isUneven = true;
-      }
-    }
-  }
-  if (isUneven) {
-    params.dist = distribution.join("_");
-  }
-  if (tabTable.checked) {
-    const mdeInputs = mdeTableBody.querySelectorAll(".mde-input");
-    if (mdeInputs.length > 0) {
-      const mdeValues = Array.from(mdeInputs).map((input) => input.value);
-      params.tblmde = mdeValues.join("_");
-    }
-  }
-  if (tabTime.checked) {
-    const timeInputs = timeTableBody.querySelectorAll(".time-input");
-    if (timeInputs.length > 0) {
-      const timeValues = Array.from(timeInputs).map((input) => input.value);
-      params.tbltime = timeValues.join("_");
-    }
-  }
-  const queryString = Object.keys(params)
+  const queryString = Object.entries(params)
+    .filter(
+      ([, value]) => value !== "" && value !== null && value !== undefined
+    )
     .map(
-      (key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
     )
     .join("&");
   return `${window.location.origin}${window.location.pathname}?${queryString}`;
 }
 
-experimentNameInput.addEventListener("input", function () {
-  updateDocumentTitle();
-});
 function updateDocumentTitle() {
-  const experimentName = experimentNameInput.value.trim();
-  if (experimentName) {
-    document.title = `${experimentName} - ${originalTitle}`;
+  const planName = planNameInput.value.trim();
+  if (planName) {
+    document.title = `${planName} - ${originalTitle}`;
   } else {
     document.title = originalTitle;
   }
 }
 
-function getExperimentName() {
-  return experimentNameInput.value.trim();
-}
-
-function setExperimentName(name) {
-  experimentNameInput.value = name || "";
-  updateDocumentTitle();
-}
-
-shareButton.addEventListener("click", handleShareButtonClick);
 function handleShareButtonClick() {
-  const url = encodeParametersToURL();
+  const url = encodeStateToURL(calculatorState);
   // Update browser URL without reloading page.
   window.history.pushState({}, "", url);
   // Copy to clipboard.
   navigator.clipboard.writeText(url).then(() => {
-    const shareButton = document.getElementById("sharePlan");
     const originalHTML = shareButton.innerHTML;
     shareButton.innerHTML = `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1505,136 +1322,4 @@ function handleShareButtonClick() {
       shareButton.innerHTML = originalHTML;
     }, 2000);
   });
-}
-
-function decodeParametersFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.size === 0) return false;
-  if (urlParams.has("name")) {
-    setExperimentName(urlParams.get("name"));
-  }
-  if (urlParams.has("bl")) baselineInput.value = urlParams.get("bl");
-  if (urlParams.has("mde")) mdeInput.value = urlParams.get("mde");
-  if (urlParams.has("rel")) {
-    const isRelative = urlParams.get("rel") === "1";
-    relativeMode.checked = isRelative;
-    absoluteMode.checked = !isRelative;
-  }
-  if (urlParams.has("var")) {
-    variantsSelect.value = urlParams.get("var");
-  }
-  if (urlParams.has("tf")) {
-    trafficFlowInput.value = urlParams.get("tf");
-    if (trafficFlowRangeInput)
-      trafficFlowRangeInput.value = urlParams.get("tf");
-  }
-  if (urlParams.has("bf")) {
-    bufferInput.value = urlParams.get("bf");
-    if (bufferRangeInput) bufferRangeInput.value = urlParams.get("bf");
-  }
-  if (urlParams.has("al")) {
-    alphaInput.value = urlParams.get("al");
-    if (alphaRangeInput) alphaRangeInput.value = urlParams.get("al");
-  }
-  if (urlParams.has("pw")) {
-    powerInput.value = urlParams.get("pw");
-    if (powerRangeInput) powerRangeInput.value = urlParams.get("pw");
-  }
-  if (urlParams.has("tt")) {
-    const testTypeValue = urlParams.get("tt");
-    const testTypeRadio = document.querySelector(
-      `input[name="testType"][value="${testTypeValue}"]`
-    );
-    if (testTypeRadio) testTypeRadio.checked = true;
-  }
-  if (urlParams.has("cr")) correctionSelect.value = urlParams.get("cr");
-  if (urlParams.has("vs")) visitorsInput.value = urlParams.get("vs");
-  if (urlParams.has("var") || variantsSelect.value) {
-    updateVariantUI();
-  }
-  if (urlParams.has("dist") && urlParams.has("var")) {
-    const distribution = urlParams.get("dist").split("_");
-    const variantCount = parseInt(urlParams.get("var"));
-    if (!variantDistributionContainer.hasChildNodes() && variantCount > 0) {
-      updateVariantUI();
-    }
-    for (let i = 0; i < Math.min(distribution.length, variantCount); i++) {
-      const letter = String.fromCharCode(65 + i);
-      const slider = document.getElementById(`slider${letter}`);
-      if (slider) {
-        slider.value = distribution[i];
-        const percentageDisplay = document.getElementById(
-          `percentage${letter}`
-        );
-        if (percentageDisplay) {
-          percentageDisplay.textContent = `${distribution[i]}%`;
-        }
-      }
-    }
-  }
-  updateMDEMode();
-  if (urlParams.has("tab")) {
-    const tabValue = urlParams.get("tab");
-    if (tabValue === "table") {
-      tabTable.checked = true;
-    } else if (tabValue === "time") {
-      tabTime.checked = true;
-    } else {
-      tabSingle.checked = true;
-    }
-    updateTabUI(document.querySelector('input[name="tabs"]:checked').id);
-  } else {
-    updateTabUI(document.querySelector('input[name="tabs"]:checked').id);
-  }
-  if (urlParams.has("tblmde")) {
-    const mdeValues = urlParams
-      .get("tblmde")
-      .split("_")
-      .map((val) => {
-        const floatVal = parseFloat(val);
-        return isNaN(floatVal) ? DEFAULT_MDE : floatVal;
-      });
-    mdeTableBody.innerHTML = "";
-    mdeValues.forEach((mdeValue) => {
-      addMDERow(null, mdeValue);
-    });
-    createDeleteButtons(mdeTableBody);
-    setupInputListeners(mdeTableBody);
-  } else if (!tabTable.checked) {
-    initializeMDEToTimeTable();
-  }
-  if (urlParams.has("tbltime")) {
-    const timeValues = urlParams
-      .get("tbltime")
-      .split("_")
-      .map((val) => {
-        const intVal = parseInt(val);
-        return isNaN(intVal) ? DEFAULT_DAYS : intVal;
-      });
-    timeTableBody.innerHTML = "";
-    timeValues.forEach((timeValue) => {
-      addTimeRow(null, timeValue);
-    });
-    createDeleteButtons(timeTableBody);
-    setupInputListeners(timeTableBody);
-  } else if (!tabTime.checked) {
-    initializeTimeToMDETable();
-  }
-  updateCalculation();
-}
-
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.size > 0) {
-  try {
-    decodeParametersFromURL();
-  } catch (error) {
-    console.error("Error decoding URL parameters:", error);
-  }
-}
-if (urlParams.get("test") !== null) {
-  console.log("Loading test script…");
-  const script = document.createElement("script");
-  script.type = "module";
-  script.src = "tests.js";
-  document.head.appendChild(script);
 }

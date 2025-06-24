@@ -20,7 +20,6 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
     testType: "two-tailed",
     correctionMethod: "none",
     expectedSampleSize: %d,
-    status: "success",
   },',
     name,
     baseline,
@@ -43,7 +42,16 @@ test_cases <- list(
   list("E-commerce conversion", 0.03, 0.33, 0.05, 0.8),
   list("Email click rate", 0.25, 0.2, 0.05, 0.85),
   list("Sign-up rate", 0.12, 0.15, 0.05, 0.9),
-  list("Purchase completion", 0.45, 0.1, 0.05, 0.8)
+  list("Purchase completion", 0.45, 0.1, 0.05, 0.8),
+  # Uneven allocation.
+  list("2:1 allocation (test:control)", 0.1, 0.2, 0.05, 0.8, 2),
+  list("3:1 allocation (test:control)", 0.05, 0.4, 0.05, 0.9, 3),
+  list("1:2 allocation (test:control)", 0.2, 0.1, 0.05, 0.8, 0.5),
+  list("1:3 allocation (test:control)", 0.15, 0.5, 0.05, 0.8, 0.33),
+  list("4:1 allocation (test:control)", 0.12, 0.15, 0.05, 0.9, 4),
+  list("1:4 allocation (test:control)", 0.08, 0.25, 0.025, 0.95, 0.25),
+  list("5:1 allocation (test:control)", 0.03, 0.33, 0.05, 0.8, 5),
+  list("1:5 allocation (test:control)", 0.25, 0.2, 0.05, 0.85, 0.2)
 )
 
 js_test_cases <- sapply(test_cases, function(params) {

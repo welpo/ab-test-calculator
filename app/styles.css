@@ -295,7 +295,6 @@ header {
     position: relative;
 }
 
-
 .status-indicator {
     position: absolute;
     top: 2px;
@@ -357,10 +356,18 @@ header {
 }
 
 /* Tooltip content styling */
-.tooltip-modifications {
+.tooltip-modifications ul {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    list-style: none;
+}
+
+.tooltip-modifications li {
+    color: var(--color-text);
+    font-size: 12px;
+    line-height: 1.4;
+    list-style: none;
 }
 
 .tooltip-modification {
@@ -827,18 +834,15 @@ select.input-field {
     flex-direction: column;
     align-items: center;
     margin: 0 auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background: var(--color-bg-light);
     max-width: 320px;
     text-align: center;
 }
 
-/* ========== EXPERIMENT NAME STYLES ========== */
-.experiment-name-input {
+/* ========== PLAN NAME STYLES ========== */
+.plan-name-input {
     transition: all 0.2s ease;
-    border: 1px dashed var(--color-border);
-    border-radius: var(--border-radius);
+    border: none;
+    border-bottom: 1px dashed var(--color-border);
     background-color: transparent;
     padding: 0.5rem 0.75rem;
     width: 100%;
@@ -847,21 +851,17 @@ select.input-field {
     text-align: center;
 }
 
-.experiment-name-input::placeholder {
+.plan-name-input::placeholder {
     color: var(--color-text-light);
     font-style: italic;
 }
 
-.experiment-name-input:focus {
+.plan-name-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px var(--color-accent-light);
-    border-style: solid;
-    border-color: var(--accent);
     background-color: var(--color-bg);
 }
 
-.experiment-name-input:not(:placeholder-shown) {
-    border-style: solid;
+.plan-name-input:not(:placeholder-shown) {
     background-color: var(--color-bg);
     font-weight: 500;
 }
@@ -1504,11 +1504,6 @@ input[type="range"]::-moz-range-thumb {
     background-color: var(--color-bg-light);
 }
 
-/* Make sure highlighting takes precedence over zebra striping */
-.comparison-table tbody tr.row-moving {
-    background-color: var(--color-accent-light) !important;
-}
-
 .comparison-table tr {
     transition: background-color 0.3s ease, transform 0.5s ease;
 }
@@ -1697,11 +1692,11 @@ input[type="range"]::-moz-range-thumb {
         position: static;
     }
 
-    .experiment-name-container {
+    .plan-name-container {
         margin-top: var(--spacing-sm);
         max-width: 100%;
     }
-    .experiment-name-input {
+    .plan-name-input {
         font-size: var(--font-size-xs);
     }
 
