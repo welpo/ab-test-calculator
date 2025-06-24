@@ -64,36 +64,8 @@ export function calculateSampleSize(
 ) {
   const absoluteEffectSize = baselineCR * relativeEffectSize;
   const treatmentCR = baselineCR + absoluteEffectSize;
-  let adjustedAlpha = alpha;
-  if (variantCount > 2) {
-    // Correction: multiple comparisons to control (not between non-control variants).
-    const m = variantCount - 1;
-    switch (correctionMethod) {
-      case "bonferroni":
-        adjustedAlpha = alpha / m;
-        break;
-      case "sidak":
-        adjustedAlpha = 1.0 - Math.pow(1.0 - alpha, 1.0 / m);
-        break;
-      case "none":
-      default:
-        adjustedAlpha = alpha;
-    }
-  }
-  // Z-scores.
-  let zAlpha, zBeta;
-  if (testType === "equivalence") {
-    zAlpha = normSInv(1.0 - adjustedAlpha);
-    zBeta = normSInv((1 + power) / 2);
-  } else if (testType === "non-inferiority" || testType === "superiority") {
-    zAlpha = normSInv(1.0 - adjustedAlpha);
-    zBeta = normSInv(power);
-  } else {
-    // two-tailed.
-    zAlpha = normSInv(1.0 - adjustedAlpha / 2.0);
-    zBeta = normSInv(power);
-  }
-  // Variance.
+  const adjustedAlpha = adjustAlphaForMultipleComparisons(alpha, variantCount, correctionMethod);
+  const { zAlpha, zBeta } = calculateZScores(testType, adjustedAlpha, power);
   const epsilon = 1e-12;
   const clippedBaselineCR = Math.max(
     epsilon,
@@ -101,11 +73,9 @@ export function calculateSampleSize(
   );
   let varControl, varTreatment;
   if (testType === "non-inferiority" || testType === "equivalence") {
-    // Both groups use baseline rate for variance.
     varControl = clippedBaselineCR * (1.0 - clippedBaselineCR);
     varTreatment = clippedBaselineCR * (1.0 - clippedBaselineCR);
   } else {
-    // Superiority tests.
     const clippedTreatmentCR = Math.max(
       epsilon,
       Math.min(1 - epsilon, treatmentCR)
@@ -113,12 +83,48 @@ export function calculateSampleSize(
     varControl = clippedBaselineCR * (1.0 - clippedBaselineCR);
     varTreatment = clippedTreatmentCR * (1.0 - clippedTreatmentCR);
   }
-  // Sample size calculation.
   const numerator = Math.pow(zAlpha + zBeta, 2) * (varControl + varTreatment);
   const denominator = Math.pow(Math.abs(absoluteEffectSize), 2);
   const sampleSizePerVariant = numerator / denominator;
   const bufferedSamplePerVariant = sampleSizePerVariant * (1 + buffer / 100);
   return Math.ceil(bufferedSamplePerVariant);
+}
+
+function adjustAlphaForMultipleComparisons(alpha, variantCount, correctionMethod) {
+  if (variantCount <= 2) {
+    return alpha;
+  }
+  const m = variantCount - 1; // Number of comparisons against control.
+  switch (correctionMethod) {
+    case "bonferroni":
+      return alpha / m;
+    case "sidak":
+      return 1.0 - Math.pow(1.0 - alpha, 1.0 / m);
+    case "none":
+    default:
+      return alpha;
+  }
+}
+
+function calculateZScores(testType, adjustedAlpha, power) {
+  let zAlpha, zBeta;
+  switch (testType) {
+    case "equivalence":
+      zAlpha = normSInv(1.0 - adjustedAlpha);
+      zBeta = normSInv((1.0 + power) / 2.0);
+      break;
+    case "non-inferiority":
+    case "superiority":
+      zAlpha = normSInv(1.0 - adjustedAlpha);
+      zBeta = normSInv(power);
+      break;
+    case "two-tailed":
+    default:
+      zAlpha = normSInv(1.0 - adjustedAlpha / 2.0);
+      zBeta = normSInv(power);
+      break;
+  }
+  return { zAlpha, zBeta };
 }
 
 export function calculateMDE(baseline, mdeValue, isRelativeMode, testType) {
