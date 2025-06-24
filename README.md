@@ -48,7 +48,7 @@ The important files are:
 - `styles.css`: Styles
 - `app.js`: Main logic
 - `statistics.js`: Statistical functions
-- `tests.js`: Tests, generated with the Python and R scripts in `test_generation/`. Add `?test` to the URL to run validation tests
+- `tests.js`: Tests, generated with scripts in `test_generation/`. Add `?test` to the URL to run the tests
 
 ## Need help?
 
