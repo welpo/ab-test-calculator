@@ -4,7 +4,8 @@ import {
   calculateMDEFromSampleSize,
 } from "./statistics.js";
 
-const CSVPREFIX = 'calculator.osc.garden'
+const CSVPREFIX = "calculator.osc.garden";
+const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
 
 // Singular defaults used when adding rows.
 const DEFAULT_MDE = 30;
@@ -126,6 +127,13 @@ function initializeUI() {
 }
 
 function decodeStateFromURL() {
+  const settings = loadSettings();
+  if (
+    settings.lastTab &&
+    ["tab-single", "tab-table", "tab-time"].includes(settings.lastTab)
+  ) {
+    calculatorState.activeTab = settings.lastTab;
+  }
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has("test")) {
     console.log("Loading test script…");
@@ -204,6 +212,16 @@ function decodeStateFromURL() {
   }
 }
 
+function loadSettings() {
+  try {
+    const savedSettings = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return savedSettings ? JSON.parse(savedSettings) : {};
+  } catch (e) {
+    console.error("Failed to parse settings from localStorage", e);
+    return {};
+  }
+}
+
 function setupEventListeners() {
   const debouncedUpdate = debounce(runUpdateCycle, 80);
   const addDebouncedListener = (element, stateKey, isNumeric = true) => {
@@ -271,10 +289,16 @@ function setupEventListeners() {
   addSyncedListener(bufferInput, bufferRangeInput, "buffer");
 
   // Tabs.
+  const updateAndSaveTab = (newTabId) => {
+    calculatorState.activeTab = newTabId;
+    const currentSettings = loadSettings();
+    currentSettings.lastTab = newTabId;
+    saveSettings(currentSettings);
+    runUpdateCycle();
+  };
   [tabSingle, tabTable, tabTime].forEach((tab) => {
     tab.addEventListener("change", (e) => {
-      calculatorState.activeTab = e.target.id;
-      runUpdateCycle();
+      updateAndSaveTab(e.target.id);
     });
   });
 
@@ -283,8 +307,7 @@ function setupEventListeners() {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         const tabId = label.getAttribute("for");
-        calculatorState.activeTab = tabId;
-        runUpdateCycle();
+        updateAndSaveTab(tabId);
       }
     });
   });
@@ -364,7 +387,7 @@ function setupEventListeners() {
   }
 
   function sortStateTable(stateArrayKey) {
-  if (calculatorState[stateArrayKey]) {
+    if (calculatorState[stateArrayKey]) {
       calculatorState[stateArrayKey].sort((a, b) => a - b);
     }
     runUpdateCycle();
@@ -428,7 +451,9 @@ function debounce(func, delay) {
 function runUpdateCycle() {
   const errors = validateInputs(calculatorState);
   const results =
-    !errors || errors.length === 0 ? calculateAllResults(calculatorState) : null;
+    !errors || errors.length === 0
+      ? calculateAllResults(calculatorState)
+      : null;
   render(calculatorState, results, errors);
 }
 
@@ -711,16 +736,19 @@ function renderAdvancedStatus(state) {
   const defaultModifications = Object.entries(ADVANCED_DEFAULTS)
     .filter(([key, defaultValue]) => state[key] !== defaultValue)
     .map(([key]) => getModificationDescription(key, state[key]));
-  const trafficModification = !isEqualDistribution(state.trafficDistribution, state.variants)
-    ? [`Traffic distribution: ${state.trafficDistribution.join('/')}`]
+  const trafficModification = !isEqualDistribution(
+    state.trafficDistribution,
+    state.variants
+  )
+    ? [`Traffic distribution: ${state.trafficDistribution.join("/")}`]
     : [];
   const modifications = [...defaultModifications, ...trafficModification];
   const hasModifications = modifications.length > 0;
-  advancedStatusDot.classList.toggle('active', hasModifications);
-  advancedHeader.classList.toggle('no-modifications', !hasModifications);
+  advancedStatusDot.classList.toggle("active", hasModifications);
+  advancedHeader.classList.toggle("no-modifications", !hasModifications);
   tooltipModifications.innerHTML = hasModifications
-    ? modifications.map((m) => `<li>${m}</li>`).join('')
-    : '';
+    ? modifications.map((m) => `<li>${m}</li>`).join("")
+    : "";
 }
 
 function isEqualDistribution(distribution, variantCount) {
@@ -728,8 +756,10 @@ function isEqualDistribution(distribution, variantCount) {
   const expectedDistribution = Array(variantCount).fill(equalShare);
   const remainder = 100 - equalShare * variantCount;
   if (expectedDistribution.length > 0) expectedDistribution[0] += remainder;
-  return distribution.length === expectedDistribution.length &&
-         distribution.every((val, i) => val === expectedDistribution[i]);
+  return (
+    distribution.length === expectedDistribution.length &&
+    distribution.every((val, i) => val === expectedDistribution[i])
+  );
 }
 
 function renderMainResults(state, results, errors) {
@@ -937,18 +967,22 @@ function renderTableBody(tbodyEl, rowInputData, rowResultData, inputClass) {
     tbodyEl.innerHTML = "";
     return;
   }
-  const { elementToPositionMap, valueToElementMap, existingRows } = cacheExistingRows(tbodyEl, inputClass);
+  const { elementToPositionMap, valueToElementMap, existingRows } =
+    cacheExistingRows(tbodyEl, inputClass);
   const finalElements = [];
   const renderedElements = new Set();
   rowInputData.forEach((inputValue, index) => {
     const result = rowResultData[index];
     const availableElements = valueToElementMap.get(String(inputValue));
-    const rowToReuse = availableElements?.length > 0 ? availableElements.shift() : null;
+    const rowToReuse =
+      availableElements?.length > 0 ? availableElements.shift() : null;
     if (rowToReuse) {
       renderedElements.add(rowToReuse);
       updateRowContent(rowToReuse, result, inputClass);
       rowToReuse.querySelector(`.${inputClass}`).dataset.index = index;
-      rowToReuse.querySelector(".delete-row")?.setAttribute("data-index", index);
+      rowToReuse
+        .querySelector(".delete-row")
+        ?.setAttribute("data-index", index);
       finalElements.push(rowToReuse);
     } else {
       const newRow = document.createElement("tr");
@@ -992,13 +1026,25 @@ function cacheExistingRows(tbodyEl, inputClass) {
 
 function updateRowContent(row, result, inputClass) {
   if (inputClass === "mde-input") {
-    row.children[1].textContent = result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—";
-    row.children[2].textContent = result ? `${result.durationDays.toLocaleString()} days` : "—";
-    row.children[3].textContent = result ? result.sampleSize.toLocaleString() : "—";
+    row.children[1].textContent = result
+      ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
+      : "—";
+    row.children[2].textContent = result
+      ? `${result.durationDays.toLocaleString()} days`
+      : "—";
+    row.children[3].textContent = result
+      ? result.sampleSize.toLocaleString()
+      : "—";
   } else {
-    row.children[1].textContent = result ? result.visitorsPerVariant.toLocaleString() : "—";
-    row.children[2].textContent = result ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}` : "—";
-    row.children[3].textContent = result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—";
+    row.children[1].textContent = result
+      ? result.visitorsPerVariant.toLocaleString()
+      : "—";
+    row.children[2].textContent = result
+      ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
+      : "—";
+    row.children[3].textContent = result
+      ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
+      : "—";
   }
 }
 
@@ -1006,16 +1052,30 @@ function createRowHtml(inputValue, result, index, inputClass) {
   if (inputClass === "mde-input") {
     return `
       <td class="editable"><div class="input-wrapper"><input type="number" class="mde-input" value="${inputValue}" step="0.1" data-index="${index}"></div></td>
-      <td>${result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—"}</td>
-      <td class="highlight">${result ? `${result.durationDays.toLocaleString()} days` : "—"}</td>
+      <td>${
+        result
+          ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
+          : "—"
+      }</td>
+      <td class="highlight">${
+        result ? `${result.durationDays.toLocaleString()} days` : "—"
+      }</td>
       <td>${result ? result.sampleSize.toLocaleString() : "—"}</td>
     `;
   } else {
     return `
       <td class="editable"><div class="input-wrapper"><input type="number" class="time-input" value="${inputValue}" min="1" step="1" data-index="${index}"></div></td>
       <td>${result ? result.visitorsPerVariant.toLocaleString() : "—"}</td>
-      <td class="highlight">${result ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}` : "—"}</td>
-      <td>${result ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%` : "—"}</td>
+      <td class="highlight">${
+        result
+          ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
+          : "—"
+      }</td>
+      <td>${
+        result
+          ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
+          : "—"
+      }</td>
     `;
   }
 }
@@ -1263,12 +1323,13 @@ function encodeStateToURL(state) {
     cr: state.correction,
     vs: state.visitors,
     name: state.planName,
-    tab:
-      state.activeTab === "tab-single"
-        ? null
-        : state.activeTab.replace("tab-", ""),
+    tab: state.activeTab.replace("tab-", ""),
   };
-  if ((state.variants > 2 || state.hasCustomTrafficDistribution) && state.trafficDistribution && state.trafficDistribution.length > 0) {
+  if (
+    (state.variants > 2 || state.hasCustomTrafficDistribution) &&
+    state.trafficDistribution &&
+    state.trafficDistribution.length > 0
+  ) {
     params.dist = state.trafficDistribution.join("_");
   }
   if (
@@ -1302,6 +1363,14 @@ function updateDocumentTitle() {
     document.title = `${planName} - ${originalTitle}`;
   } else {
     document.title = originalTitle;
+  }
+}
+
+function saveSettings(settings) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Failed to save settings to localStorage", e);
   }
 }
 
