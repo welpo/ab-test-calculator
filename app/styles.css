@@ -625,6 +625,7 @@ select.input-field {
 
 /* ========== EXPLANATION TEXT ========== */
 .explanation {
+    margin: 0;
     margin-right: var(--spacing-sm);
     margin-left: var(--spacing-sm);
     color: var(--color-text-light);
@@ -778,7 +779,7 @@ select.input-field {
 /* ========== TABS CONTAINER ========== */
 .tabs-container {
     position: relative;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
 }
 
 .tab-input {
