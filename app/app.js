@@ -8,7 +8,7 @@ const CSVPREFIX = "calculator.osc.garden";
 const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
 
 // Singular defaults used when adding rows.
-const DEFAULT_MDE = 30;
+const DEFAULT_MDE = 10;
 const DEFAULT_DAYS = 30;
 const DEFAULT_MDES = [5, 10, 15, 20, 25];
 const DEFAULT_TIMES = [7, 14, 30, 60, 90];
