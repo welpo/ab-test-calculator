@@ -678,28 +678,35 @@ function render(state, results, errors) {
 }
 
 function renderFormInputs(state) {
-  // Basic inputs
-  visitorsInput.value = state.visitors;
-  baselineInput.value = state.baseline;
-  mdeInput.value = state.mde;
+  // Only update input if not focused (otherwise typing a decimal number would immediately remove the dot).
+  const updateInputValue = (input, value) => {
+    if (document.activeElement !== input) {
+      input.value = value;
+    }
+  };
+
+  // Basic inputs.
+  updateInputValue(visitorsInput, state.visitors);
+  updateInputValue(baselineInput, state.baseline);
+  updateInputValue(mdeInput, state.mde);
   variantsSelect.value = state.variants;
-  planNameInput.value = state.planName;
-  // Mode and Test Type
-  relativeMode.checked = state.isRelativeMode;
-  absoluteMode.checked = !state.isRelativeMode;
+  updateInputValue(planNameInput, state.planName);
+  relativeMode.checked = state.isRelativeMde;
+  absoluteMode.checked = !state.isRelativeMde;
+
+  // Advanced settings.
   document.querySelector(
     `input[name="testType"][value="${state.testType}"]`
   ).checked = true;
-  // Advanced settings
-  correctionSelect.value = state.correction;
-  alphaInput.value = state.alpha;
-  alphaRangeInput.value = state.alpha;
-  powerInput.value = state.power;
-  powerRangeInput.value = state.power;
-  trafficFlowInput.value = state.trafficFlow;
-  trafficFlowRangeInput.value = state.trafficFlow;
-  bufferInput.value = state.buffer;
-  bufferRangeInput.value = state.buffer;
+  correctionSelect.value = state.correctionMethod;
+  updateInputValue(alphaInput, state.alpha);
+  updateInputValue(alphaRangeInput, state.alpha);
+  updateInputValue(powerInput, state.power);
+  updateInputValue(powerRangeInput, state.power);
+  updateInputValue(trafficFlowInput, state.trafficFlow);
+  updateInputValue(trafficFlowRangeInput, state.trafficFlow);
+  updateInputValue(bufferInput, state.buffer);
+  updateInputValue(bufferRangeInput, state.buffer);
 }
 
 function renderDynamicText(state) {
