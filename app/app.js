@@ -463,6 +463,12 @@ function setupEventListeners() {
   planNameInput.addEventListener("input", function () {
     updateDocumentTitle();
   });
+  planNameInput.addEventListener("keydown", function (event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    shareButton.click();
+  }
+});
 }
 
 function debounce(func, delay) {
