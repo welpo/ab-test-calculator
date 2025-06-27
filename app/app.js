@@ -115,8 +115,8 @@ const timeTable = document.getElementById("timeTable");
 const timeTableBody = timeTable.querySelector("tbody");
 const addTimeRowBtn = document.getElementById("addTimeRowBtn");
 const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
-const optimiseDistributionBtn = document.getElementById(
-  "optimiseDistributionBtn"
+const optimalDistributionBtn = document.getElementById(
+  "optimalDistributionBtn"
 );
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
@@ -456,7 +456,7 @@ function setupEventListeners() {
     runUpdateCycle();
   });
 
-  optimiseDistributionBtn.addEventListener("click", () => {
+  optimalDistributionBtn.addEventListener("click", () => {
     applyOptimalDistribution();
   });
 
