@@ -76,6 +76,7 @@ const tabSingleLabel = document.querySelector('label[for="tab-single"]');
 const tabTableLabel = document.querySelector('label[for="tab-table"]');
 
 // Advanced settings.
+const settingsCheckbox = document.getElementById("settings-checkbox");
 const advancedStatusDot = document.getElementById("advancedStatusDot");
 const tooltipModifications = document.getElementById("tooltipModifications");
 const advancedHeader = document.querySelector(".advanced-header");
@@ -114,7 +115,9 @@ const timeTable = document.getElementById("timeTable");
 const timeTableBody = timeTable.querySelector("tbody");
 const addTimeRowBtn = document.getElementById("addTimeRowBtn");
 const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
-const optimiseDistributionBtn = document.getElementById("optimiseDistributionBtn");
+const optimiseDistributionBtn = document.getElementById(
+  "optimiseDistributionBtn"
+);
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
 const downloadTimeCSVBtn = document.getElementById("downloadTimeCSVBtn");
@@ -124,19 +127,26 @@ const originalTitle = "A/B Test Sample Size & Duration Calculator";
 initializeUI();
 
 function initializeUI() {
+  loadPersistentSettings();
   decodeStateFromURL();
   setupEventListeners();
   runUpdateCycle();
 }
 
-function decodeStateFromURL() {
-  const settings = loadSettings();
-  if (
-    settings.lastTab &&
-    ["tab-single", "tab-table", "tab-time"].includes(settings.lastTab)
-  ) {
-    calculatorState.activeTab = settings.lastTab;
+function loadPersistentSettings() {
+  const savedSettings = loadSettings();
+  if (typeof savedSettings.isAdvancedOpen === "boolean") {
+    calculatorState.isAdvancedOpen = savedSettings.isAdvancedOpen;
   }
+  if (savedSettings.lastTab && ["tab-single", "tab-table", "tab-time"].includes(savedSettings.lastTab)) {
+    calculatorState.activeTab = savedSettings.lastTab;
+  }
+  if (settingsCheckbox) {
+    settingsCheckbox.checked = calculatorState.isAdvancedOpen;
+  }
+}
+
+function decodeStateFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has("test")) {
     console.log("Loading test script…");
@@ -215,6 +225,22 @@ function decodeStateFromURL() {
   }
 }
 
+function savePersistentSettings() {
+  const settingsToSave = {
+    lastTab: calculatorState.activeTab,
+    isAdvancedOpen: calculatorState.isAdvancedOpen,
+  };
+  saveSettings(settingsToSave);
+}
+
+function saveSettings(settings) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Failed to save settings to localStorage", e);
+  }
+}
+
 function loadSettings() {
   try {
     const savedSettings = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -279,6 +305,10 @@ function setupEventListeners() {
   });
 
   // Advanced inputs.
+  settingsCheckbox.addEventListener("change", (e) => {
+    calculatorState.isAdvancedOpen = e.target.checked;
+    savePersistentSettings();
+  });
   addSyncedListener(alphaInput, alphaRangeInput, "alpha");
   addSyncedListener(powerInput, powerRangeInput, "power");
   addSyncedListener(trafficFlowInput, trafficFlowRangeInput, "trafficFlow");
@@ -287,9 +317,7 @@ function setupEventListeners() {
   // Tabs.
   const updateAndSaveTab = (newTabId) => {
     calculatorState.activeTab = newTabId;
-    const currentSettings = loadSettings();
-    currentSettings.lastTab = newTabId;
-    saveSettings(currentSettings);
+    savePersistentSettings();
     runUpdateCycle();
   };
   [tabSingle, tabTable, tabTime].forEach((tab) => {
@@ -1528,14 +1556,6 @@ function updateDocumentTitle() {
     document.title = `${planName} - ${originalTitle}`;
   } else {
     document.title = originalTitle;
-  }
-}
-
-function saveSettings(settings) {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-  } catch (e) {
-    console.error("Failed to save settings to localStorage", e);
   }
 }
 
