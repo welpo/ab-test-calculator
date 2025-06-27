@@ -1408,6 +1408,18 @@ input[type="range"]::-moz-range-thumb {
     font-size: var(--font-size-xs);
 }
 
+#custom-distribution-section .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.distribution-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 #share-icon {
     vertical-align: text-bottom;
 }

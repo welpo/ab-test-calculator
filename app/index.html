@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=7c482acb">
+    <link rel="stylesheet" href="styles.css?h=dfaa6dda">
 </head>
 
 <body>
@@ -372,7 +372,7 @@
                 </div>
 
                 <div class="config-section">
-                    <h4 class="config-section-title">Traffic Allocation</h4>
+                    <h4 class="config-section-title">Traffic allocation</h4>
                     <div class="config-grid">
                         <div class="input-group">
                             <div class="label-row">
@@ -409,12 +409,16 @@
                         </div>
                     </div>
 
-                    <div class="input-group">
+                    <div id="custom-distribution-section" class="input-group">
                         <div class="label-row">
                             <label class="input-label">Traffic distribution</label>
-                            <button type="button" id="resetDistributionBtn" class="action-button">
-                                reset
-                            </button>
+                            <div class="distribution-actions">
+                                <button id="resetDistributionBtn" class="action-button">reset</button>
+                                <button id="optimiseDistributionBtn" class="action-button">optimise</button>
+                                <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Information about optimal distribution">
+                                    <span class="tooltip">When testing more than one variant, maximises power for the set of pairwise comparisons (each group against control) by allocating more subjects to the control group.</span>
+                                </span>
+                            </div>
                         </div>
 
                         <div id="variantDistributionContainer" class="variant-distribution-container">
@@ -588,7 +592,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=a24484de"></script>
+<script defer type="module" src="app.js?h=b4ff707b"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

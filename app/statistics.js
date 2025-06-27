@@ -1,3 +1,18 @@
+export function getOptimalSplit(numberOfVariants) {
+  if (!Number.isInteger(numberOfVariants) || numberOfVariants < 1) {
+    throw new Error("Input must be a positive whole number.");
+  }
+  if (numberOfVariants === 1) return [50, 50];
+  const controlWeight = Math.sqrt(numberOfVariants);
+  const totalWeight = controlWeight + numberOfVariants;
+  const idealTreatmentProp = 1 / totalWeight;
+  const treatmentPoints = Math.round(idealTreatmentProp * 100);
+  const allocations = Array(numberOfVariants).fill(treatmentPoints);
+  const totalTreatmentPoints = treatmentPoints * numberOfVariants;
+  const controlPoints = 100 - totalTreatmentPoints;
+  return [controlPoints, ...allocations];
+}
+
 export function calculateMDE(baseline, mdeValue, isRelativeMde, testType) {
   const baselineRate = baseline / 100;
   const mdeDecimal = mdeValue / 100;

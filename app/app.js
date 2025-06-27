@@ -1,4 +1,5 @@
 import {
+  getOptimalSplit,
   calculateExperimentSize,
   calculateMDE,
   calculateMDEFromSampleSize,
@@ -113,6 +114,7 @@ const timeTable = document.getElementById("timeTable");
 const timeTableBody = timeTable.querySelector("tbody");
 const addTimeRowBtn = document.getElementById("addTimeRowBtn");
 const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
+const optimiseDistributionBtn = document.getElementById("optimiseDistributionBtn");
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
 const downloadTimeCSVBtn = document.getElementById("downloadTimeCSVBtn");
@@ -260,15 +262,8 @@ function setupEventListeners() {
   });
 
   variantsSelect.addEventListener("change", (e) => {
-    const newVariantCount = parseInt(e.target.value, 10);
-    calculatorState.variants = newVariantCount;
-    const equalShare = Math.floor(100 / newVariantCount);
-    const newDistribution = Array(newVariantCount).fill(equalShare);
-    const remainder = 100 - equalShare * newVariantCount;
-    if (newDistribution.length > 0) newDistribution[0] += remainder;
-    calculatorState.trafficDistribution = newDistribution;
-    calculatorState.hasCustomTrafficDistribution = false;
-    runUpdateCycle();
+    calculatorState.variants = parseInt(e.target.value, 10);
+    applyEqualDistribution();
   });
 
   testTypeInputs.forEach((input) => {
@@ -431,6 +426,10 @@ function setupEventListeners() {
     calculatorState.trafficDistribution = newDistribution;
     calculatorState.hasCustomTrafficDistribution = false;
     runUpdateCycle();
+  });
+
+  optimiseDistributionBtn.addEventListener("click", () => {
+    applyOptimalDistribution();
   });
 
   planNameInput.addEventListener("input", function () {
@@ -1309,6 +1308,32 @@ function formatTimeEstimate(days) {
     }
     return timeEstimateText;
   }
+}
+
+function applyEqualDistribution() {
+  const newVariantCount = calculatorState.variants;
+  const equalShare = Math.floor(100 / newVariantCount);
+  const newDistribution = Array(newVariantCount).fill(equalShare);
+  const remainder = 100 - equalShare * newVariantCount;
+  if (newDistribution.length > 0) {
+    newDistribution[0] += remainder;
+  }
+  calculatorState.trafficDistribution = newDistribution;
+  calculatorState.hasCustomTrafficDistribution = false;
+  runUpdateCycle();
+}
+
+function applyOptimalDistribution() {
+  const totalVariants = calculatorState.variants;
+  if (totalVariants <= 2) {
+    applyEqualDistribution();
+    return;
+  }
+  const numberOfTreatments = totalVariants - 1;
+  const newDistribution = getOptimalSplit(numberOfTreatments);
+  calculatorState.trafficDistribution = newDistribution;
+  calculatorState.hasCustomTrafficDistribution = true;
+  runUpdateCycle();
 }
 
 function downloadTableAsCSV(tableId) {
