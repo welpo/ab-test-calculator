@@ -5,7 +5,7 @@
     --accent: #4a5568;
     --color-bg: #fff;
     --color-bg-light: #f5f7fa;
-    --color-bg-lighter: #f9f9f9;
+    --color-bg-lighter: #fbfbfb;
     --color-border: #e0e0e0;
     --color-accent-light: rgba(74, 85, 104, 0.1);
     --color-tooltip-bg: #fff;
@@ -597,6 +597,8 @@ select.input-field {
 
 /* ========== RESULT CARDS ========== */
 .result-card {
+    display: flex;
+    flex-direction: column;
     box-shadow: var(--shadow-sm);
     border-radius: var(--border-radius);
     background: var(--color-bg-light);
@@ -611,6 +613,14 @@ select.input-field {
     font-size: var(--font-size-md);
 }
 
+.result-body {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
 .result-value {
     margin-bottom: var(--spacing-xs);
     color: var(--accent);
@@ -620,6 +630,38 @@ select.input-field {
 
 .result-subtitle {
     color: var(--color-text-light);
+    font-size: var(--font-size-sm);
+}
+
+/* ========== UNEVEN SPLIT ========== */
+.stacked-variants {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.variant-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-lighter);
+    padding: 8px 12px;
+    width: 200px;
+}
+
+.variant-label {
+    color: var(--color-text);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.variant-value {
+    color: var(--accent);
+    font-weight: 600;
     font-size: var(--font-size-sm);
 }
 
@@ -914,11 +956,6 @@ select.input-field {
 /* ========== HIDDEN SECTIONS ========== */
 .hidden {
     display: none;
-}
-
-.hidden-details {
-    display: none;
-    margin-top: var(--spacing-md);
 }
 
 /* ========== MODAL/OVERLAY ========== */
@@ -1337,6 +1374,13 @@ input[type="range"]::-moz-range-thumb {
     margin-bottom: 4px;
 }
 
+.control-label {
+    margin-left: var(--spacing-sm);
+    color: var(--color-text-light);
+    font-weight: normal;
+    font-size: var(--font-size-xs);
+}
+
 .variant-letter-label {
     display: flex;
     align-items: center;
@@ -1697,6 +1741,7 @@ input[type="range"]::-moz-range-thumb {
         margin-top: var(--spacing-sm);
         max-width: 100%;
     }
+
     .plan-name-input {
         font-size: var(--font-size-xs);
     }
@@ -1772,24 +1817,24 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* When checkbox is checked: Show settings panel */
-.settings-checkbox:checked ~ .main-layout-container .settings-panel {
+.settings-checkbox:checked~.main-layout-container .settings-panel {
     display: block;
 }
 
 /* When checkbox is checked: Expand container */
-.settings-checkbox:checked ~ .main-layout-container {
+.settings-checkbox:checked~.main-layout-container {
     max-width: 1200px;
 }
 
 /* When checkbox is checked: Visual feedback on toggle button */
-.settings-checkbox:checked ~ .main-layout-container .advanced-header {
+.settings-checkbox:checked~.main-layout-container .advanced-header {
     transform: rotate(180deg);
     background-color: var(--color-accent-light);
 }
 
 /* Mobile: Modal behavior when checkbox is checked */
 @media (max-width: 1023px) {
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel {
+    .settings-checkbox:checked~.main-layout-container .settings-panel {
         display: flex;
         position: fixed;
         top: 0;
@@ -1804,14 +1849,14 @@ input[type="range"]::-moz-range-thumb {
         padding: 2rem 1rem;
     }
 
-    .settings-checkbox:checked ~ .main-layout-container .settings-header {
+    .settings-checkbox:checked~.main-layout-container .settings-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
 
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-header,
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-content {
+    .settings-checkbox:checked~.main-layout-container .settings-panel>.settings-header,
+    .settings-checkbox:checked~.main-layout-container .settings-panel>.settings-content {
         position: relative;
         z-index: 1;
         margin: 0 auto;
@@ -1821,13 +1866,13 @@ input[type="range"]::-moz-range-thumb {
         max-width: 600px;
     }
 
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-header {
+    .settings-checkbox:checked~.main-layout-container .settings-panel>.settings-header {
         border-bottom: 1px solid var(--color-border);
         border-radius: var(--border-radius) var(--border-radius) 0 0;
         padding-bottom: var(--spacing-sm);
     }
 
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel > .settings-content {
+    .settings-checkbox:checked~.main-layout-container .settings-panel>.settings-content {
         border-radius: 0 0 var(--border-radius) var(--border-radius);
         max-height: 85vh;
         overflow-y: auto;
@@ -1840,7 +1885,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* Desktop: Side panel behavior when checkbox is checked */
 @media (min-width: 1024px) {
-    .settings-checkbox:checked ~ .main-layout-container .settings-panel {
+    .settings-checkbox:checked~.main-layout-container .settings-panel {
         display: block;
         flex: 1;
         border-radius: var(--border-radius);

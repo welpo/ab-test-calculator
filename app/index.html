@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=99997f42">
+    <link rel="stylesheet" href="styles.css?h=7c482acb">
 </head>
 
 <body>
@@ -142,7 +142,7 @@
 
                 <div class="input-group">
                     <div class="label-row">
-                        <label for="variants" class="input-label">Number of variants</label>
+                        <label for="variants" class="input-label">Number of groups</label>
                     </div>
                     <div class="select-wrapper">
                         <select id="variants" class="input-field">
@@ -178,14 +178,18 @@
                     <div class="results-grid">
                         <div class="result-card" aria-live="polite">
                             <h2 class="result-title">Duration</h2>
-                            <p class="result-value" id="durationValue">50</p>
-                            <p class="result-subtitle">days to complete</p>
+                            <div class="result-body">
+                                <p class="result-value" id="durationValue">50</p>
+                                <p class="result-subtitle">days to complete</p>
+                            </div>
                         </div>
 
                         <div class="result-card" aria-live="polite">
                             <h2 class="result-title">Sample size</h2>
-                            <p class="result-value" id="sampleValue">24,601</p>
-                            <p class="result-subtitle">per variant</p>
+                            <div class="result-body">
+                                <p class="result-value" id="sampleValue">24,601</p>
+                                <p class="result-subtitle" id="sampleSubtitle">per variant</p>
+                            </div>
                         </div>
                     </div>
 
@@ -195,17 +199,9 @@
                         <span class="highlight" id="relativeChange">10%</span> improvement
                         (from <span id="fromValue">3.0</span>% to <span id="toValue">3.3</span>%).
                     </p>
-
-                    <!-- Hidden variant section -->
-                    <div class="hidden-details" id="variantsSection">
-                        <h3 class="result-title hidden">Sample Size Per Variant</h3>
-                        <div class="variants-grid" id="variantsGrid">
-                            <!-- Variant cards are dynamically inserted here by JavaScript -->
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Tab 2: Δ -> Time -->
+                <!-- Tab 2: Δ → Time -->
                 <div id="tab-table-content" class="tab-content" role="tabpanel" aria-labelledby="tab-table">
                     <div class="comparison-table-container">
                         <table class="comparison-table" id="mdeTable">
@@ -213,8 +209,8 @@
                                 <tr>
                                     <th scope="col">Detectable Δ (%)</th>
                                     <th scope="col">From → To</th>
-                                    <th scope="col">Duration</th>
-                                    <th scope="col">Visitors/variant</th>
+                                    <th data-csv-header="Days">Duration</th>
+                                    <th scope="col">Total visitors</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -229,14 +225,14 @@
                     </div>
                 </div>
 
-                <!-- Tab 3: Time -> Δ -->
+                <!-- Tab 3: Time → Δ -->
                 <div id="tab-time-content" class="tab-content" role="tabpanel" aria-labelledby="tab-time">
                     <div class="comparison-table-container">
                         <table class="comparison-table" id="timeTable">
                             <thead>
                                 <tr>
                                     <th scope="col">Days</th>
-                                    <th scope="col">Visitors/variant</th>
+                                    <th scope="col">Total visitors</th>
                                     <th scope="col">Detectable Δ</th>
                                     <th scope="col">From → To</th>
                                 </tr>
@@ -592,7 +588,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=9821d4c6"></script>
+<script defer type="module" src="app.js?h=a24484de"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

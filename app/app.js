@@ -1,5 +1,5 @@
 import {
-  calculateSampleSize,
+  calculateExperimentSize,
   calculateMDE,
   calculateMDEFromSampleSize,
 } from "./statistics.js";
@@ -16,7 +16,7 @@ const ADVANCED_DEFAULTS = {
   alpha: 0.05,
   power: 0.8,
   testType: "superiority",
-  correction: "none",
+  correctionMethod: "none",
   trafficFlow: 100,
   buffer: 0,
 };
@@ -29,25 +29,25 @@ const calculatorState = {
   /** Minimum Detectable Effect (or Improvement/Margin, etc.). */
   mde: DEFAULT_MDE,
   /** True if MDE is relative (%), false if absolute (points). */
-  isRelativeMode: true,
+  isRelativeMde: true,
   /** Total number of variants in the test, including control. */
   variants: 2,
 
   /** The statistical test type.
    * Values: 'superiority', 'two-tailed', 'non-inferiority', 'equivalence' */
-  testType: "superiority",
+  testType: ADVANCED_DEFAULTS.testType,
   /** Multiple comparison correction method.
    * Values: 'none', 'bonferroni', 'sidak' */
-  correction: "none",
+  correctionMethod: ADVANCED_DEFAULTS.correctionMethod,
   trafficDistribution: [50, 50],
   hasCustomTrafficDistribution: false,
-  alpha: 0.05,
+  alpha: ADVANCED_DEFAULTS.alpha,
   /** Statistical power (1 - beta). */
-  power: 0.8,
+  power: ADVANCED_DEFAULTS.power,
   /** Percentage of total traffic to be included in the experiment. */
-  trafficFlow: 100,
+  trafficFlow: ADVANCED_DEFAULTS.trafficFlow,
   /** A buffer (as a percentage) added to the final sample size. */
-  buffer: 0,
+  buffer: ADVANCED_DEFAULTS.buffer,
 
   // For "Δ → Time" and "Time → Δ" tables.
   mdeTableRows: DEFAULT_MDES,
@@ -89,6 +89,9 @@ const trafficFlowRangeInput = document.getElementById("trafficFlowRange");
 const bufferInput = document.getElementById("buffer");
 const bufferRangeInput = document.getElementById("bufferRange");
 const resetDistributionBtn = document.getElementById("resetDistributionBtn");
+const variantDistributionContainer = document.getElementById(
+  "variantDistributionContainer"
+);
 
 // Errors.
 const errorContainer = document.getElementById("errorContainer");
@@ -99,9 +102,7 @@ const explanationElem = document.getElementById("explanation");
 const durationValueElem = document.getElementById("durationValue");
 const sampleValueElem = document.getElementById("sampleValue");
 const timeEstimateElem = document.getElementById("timeEstimate");
-const variantDistributionContainer = document.getElementById(
-  "variantDistributionContainer"
-);
+const sampleSubtitleElem = document.getElementById("sampleSubtitle");
 const mdeTable = document.getElementById("mdeTable");
 const mdeTableBody = mdeTable.querySelector("tbody");
 const addRowBtn = document.getElementById("addRowBtn");
@@ -166,13 +167,13 @@ function decodeStateFromURL() {
   updateState("var", "variants", parseInt);
   // Booleans and special values.
   if (urlParams.has("rel")) {
-    calculatorState.isRelativeMode = urlParams.get("rel") === "1";
+    calculatorState.isRelativeMde = urlParams.get("rel") === "1";
   }
   if (urlParams.has("tt")) {
     calculatorState.testType = urlParams.get("tt");
   }
   if (urlParams.has("cr")) {
-    calculatorState.correction = urlParams.get("cr");
+    calculatorState.correctionMethod = urlParams.get("cr");
   }
   if (urlParams.has("tab")) {
     const tabMap = {
@@ -250,11 +251,11 @@ function setupEventListeners() {
 
   // Mode and test configuration.
   relativeMode.addEventListener("change", () => {
-    calculatorState.isRelativeMode = true;
+    calculatorState.isRelativeMde = true;
     runUpdateCycle();
   });
   absoluteMode.addEventListener("change", () => {
-    calculatorState.isRelativeMode = false;
+    calculatorState.isRelativeMde = false;
     runUpdateCycle();
   });
 
@@ -278,7 +279,7 @@ function setupEventListeners() {
   });
 
   correctionSelect.addEventListener("change", (e) => {
-    calculatorState.correction = e.target.value;
+    calculatorState.correctionMethod = e.target.value;
     runUpdateCycle();
   });
 
@@ -452,159 +453,200 @@ function runUpdateCycle() {
   const errors = validateInputs(calculatorState);
   const results =
     !errors || errors.length === 0
-      ? calculateAllResults(calculatorState)
+      ? calculateResultsForActiveTab(calculatorState)
       : null;
   render(calculatorState, results, errors);
 }
 
 function validateInputs(state) {
-  const errors = [];
-  const {
-    visitors,
-    baseline,
-    alpha,
-    power,
-    trafficFlow,
-    buffer,
-    mde,
-    testType,
-    isRelativeMode,
-  } = state;
-  const mdeLabel = getLabelsForTestType(testType).label;
-  const checkNumber = (value, key, message) => {
-    if (isNaN(value) || value === null) {
-      errors.push({ key, message: `${message} must be a number.` });
-      return false;
-    }
-    return true;
-  };
+  const basicErrors = getBasicInputErrors(state);
+  const mdeErrors = getMdeErrors(state);
+  return [...basicErrors, ...mdeErrors];
+}
 
-  if (!checkNumber(visitors, "visitors", "Daily visitors")) return errors;
-  if (visitors <= 0) {
-    errors.push({
+function getBasicInputErrors(state) {
+  const validationConfig = [
+    {
       key: "visitors",
-      message: "Daily visitors must be a positive number greater than 0.",
-    });
-  }
-
-  if (!checkNumber(baseline, "baseline", "Baseline CR")) return errors;
-  if (baseline <= 0 || baseline >= 100) {
-    errors.push({
+      label: "Daily visitors",
+      rules: { min: 0, max: Infinity, excludeMin: true },
+    },
+    {
       key: "baseline",
-      message: "Baseline rate must be between 0 and 100.",
-    });
-  }
-
-  if (!checkNumber(alpha, "alpha", "Significance level")) return errors;
-  if (alpha <= 0 || alpha >= 1) {
-    errors.push({
+      label: "Baseline CR",
+      rules: { min: 0, max: 100, excludeMin: true, excludeMax: true },
+    },
+    {
       key: "alpha",
-      message: "Significance level must be between 0 and 1.",
-    });
-  }
-
-  if (!checkNumber(power, "power", "Statistical power")) return errors;
-  if (power <= 0 || power >= 1) {
-    errors.push({
+      label: "Significance level",
+      rules: { min: 0, max: 1, excludeMin: true, excludeMax: true },
+    },
+    {
       key: "power",
-      message: "Statistical power must be between 0 and 1.",
-    });
-  }
-
-  if (!checkNumber(trafficFlow, "trafficFlow", "Traffic flow")) return errors;
-  if (trafficFlow <= 0 || trafficFlow > 100) {
-    errors.push({
+      label: "Statistical power",
+      rules: { min: 0, max: 1, excludeMin: true, excludeMax: true },
+    },
+    {
       key: "trafficFlow",
-      message: "Traffic flow must be between 0 and 100.",
-    });
-  }
+      label: "Traffic flow",
+      rules: { min: 0, max: 100, excludeMin: true },
+    },
+    { key: "buffer", label: "Buffer", rules: { min: 0, max: Infinity } },
+  ];
+  return validationConfig.reduce((errors, config) => {
+    const value = state[config.key];
+    if (isNaN(value) || value === null) {
+      errors.push({
+        key: config.key,
+        message: `${config.label} must be a number.`,
+      });
+      return errors;
+    }
+    const { min, max, excludeMin = false, excludeMax = false } = config.rules;
+    const isTooLow = excludeMin ? value <= min : value < min;
+    const isTooHigh = excludeMax ? value >= max : value > max;
+    if (isTooLow || isTooHigh) {
+      const rangeMessage =
+        min === 0 && max === Infinity
+          ? `${config.label} must be a positive number greater than 0.`
+          : `${config.label} must be between ${min} and ${max}.`;
+      errors.push({ key: config.key, message: rangeMessage });
+    }
+    return errors;
+  }, []);
+}
 
-  if (!checkNumber(buffer, "buffer", "Buffer")) return errors;
-  if (buffer < 0) {
-    errors.push({ key: "buffer", message: "Buffer cannot be negative." });
+function getMdeErrors(state) {
+  if (state.activeTab !== "tab-single") {
+    return [];
   }
-
-  if (!checkNumber(mde, "mde", `"${mdeLabel}"`)) return errors;
+  const { mde, testType } = state;
+  const mdeLabel = getLabelsForTestType(testType).label;
+  if (isNaN(mde) || mde === null) {
+    return [{ key: "mde", message: `"${mdeLabel}" must be a number.` }];
+  }
   if (mde === 0) {
-    errors.push({ key: "mde", message: `"${mdeLabel}" cannot be zero.` });
+    return [{ key: "mde", message: `"${mdeLabel}" cannot be zero.` }];
   }
-
   switch (testType) {
     case "superiority":
-      const targetRate = isRelativeMode
-        ? baseline * (1 + mde / 100)
-        : baseline + mde;
-      if (mde > 0 && targetRate >= 100) {
-        errors.push({
-          key: "mde",
-          message: `An improvement results in an invalid rate of ${targetRate.toFixed(
-            2
-          )}%.`,
-        });
-      } else if (mde < 0 && targetRate <= 0) {
-        errors.push({
-          key: "mde",
-          message: `A reduction results in an invalid rate of ${targetRate.toFixed(
-            2
-          )}%.`,
-        });
-      }
-      break;
+      return getSuperiorityMdeErrors(state, mdeLabel);
+    case "two-tailed":
+      return getTwoTailedMdeErrors(state, mdeLabel);
+    case "non-inferiority":
+      return getNonInferiorityMdeErrors(state, mdeLabel);
     default:
-      if (mde < 0) {
-        errors.push({
-          key: "mde",
-          message: `"${mdeLabel}" must be a positive number.`,
-        });
-        break;
-      }
-      if (testType !== "non-inferiority") {
-        const upperBound = isRelativeMode
-          ? baseline * (1 + mde / 100)
-          : baseline + mde;
-        if (upperBound >= 100) {
-          errors.push({
-            key: "mde",
-            message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
-              2
-            )}%.`,
-          });
-        }
-      }
-      if (testType !== "two-tailed") {
-        const lowerBound = isRelativeMode
-          ? baseline * (1 - mde / 100)
-          : baseline - mde;
-        if (lowerBound <= 0) {
-          errors.push({
-            key: "mde",
-            message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
-              2
-            )}%.`,
-          });
-        }
-      }
-      break;
+      return [];
+  }
+}
+
+function getSuperiorityMdeErrors(state, mdeLabel) {
+  const { mde, baseline, isRelativeMde } = state;
+  const targetRate = calculateTargetRate(baseline, mde, isRelativeMde);
+  if (mde > 0 && targetRate >= 100) {
+    return [
+      {
+        key: "mde",
+        message: `An improvement results in an invalid rate of ${targetRate.toFixed(
+          2
+        )}%.`,
+      },
+    ];
+  }
+  if (mde < 0 && targetRate <= 0) {
+    return [
+      {
+        key: "mde",
+        message: `A reduction results in an invalid rate of ${targetRate.toFixed(
+          2
+        )}%.`,
+      },
+    ];
+  }
+  return [];
+}
+
+function getTwoTailedMdeErrors(state, mdeLabel) {
+  const { mde, baseline, isRelativeMde } = state;
+  const errors = [];
+  if (mde < 0) {
+    return [
+      { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
+    ];
+  }
+  const upperBound = calculateTargetRate(baseline, mde, isRelativeMde);
+  if (upperBound >= 100) {
+    errors.push({
+      key: "mde",
+      message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
+        2
+      )}%`,
+    });
+  }
+  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  if (lowerBound <= 0) {
+    errors.push({
+      key: "mde",
+      message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
+        2
+      )}%`,
+    });
   }
   return errors;
 }
 
-function calculateAllResults(state) {
+function getNonInferiorityMdeErrors(state, mdeLabel) {
+  const { mde, baseline, isRelativeMde } = state;
+  if (mde < 0) {
+    return [
+      { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
+    ];
+  }
+  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  if (lowerBound <= 0) {
+    return [
+      {
+        key: "mde",
+        message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
+          2
+        )}%`,
+      },
+    ];
+  }
+  return [];
+}
+
+function calculateTargetRate(baseline, mde, isRelativeMde) {
+  return isRelativeMde ? baseline * (1 + mde / 100) : baseline + mde;
+}
+
+function calculateResultsForActiveTab(state) {
   try {
-    const mainResult = getSampleSizeAndDurationForMde(state.mde, state);
-    const mdeTableData = state.mdeTableRows.map((mdeValue) =>
-      getSampleSizeAndDurationForMde(mdeValue, state)
-    );
-    const timeTableData = state.timeTableRows.map((dayValue) =>
-      calculateTimeRowResult(dayValue, state)
-    );
-    return {
-      duration: mainResult.durationDays,
-      sampleSizePerVariant: mainResult.sampleSize,
-      targetRate: mainResult.targetRate,
-      mdeTableData,
-      timeTableData,
-    };
+    switch (state.activeTab) {
+      case "tab-single":
+        const singleResult = getSampleSizeAndDurationForMde(state.mde, state);
+        return {
+          duration: singleResult.durationDays,
+          sampleSizePerVariant: singleResult.sampleSizePerGroup,
+          totalSampleSize: singleResult.totalSampleSize,
+          targetRate: singleResult.targetRate,
+        };
+
+      case "tab-table":
+        return {
+          mdeTableData: state.mdeTableRows.map((mdeValue) =>
+            getSampleSizeAndDurationForMde(mdeValue, state)
+          ),
+        };
+
+      case "tab-time":
+        return {
+          timeTableData: state.timeTableRows.map((dayValue) =>
+            calculateTimeRowResult(dayValue, state)
+          ),
+        };
+    }
+    return {};
   } catch (error) {
     console.error("Calculation error:", error);
     return null;
@@ -615,44 +657,61 @@ function getSampleSizeAndDurationForMde(mdeValue, state) {
   const mdeInfo = calculateMDE(
     state.baseline,
     mdeValue,
-    state.isRelativeMode,
+    state.isRelativeMde,
     state.testType
   );
-  const sampleSize = calculateSampleSize(
-    mdeInfo.baselineRate,
-    mdeInfo.relMDE,
-    state.alpha,
-    state.power,
-    state.variants,
-    state.buffer,
-    state.testType,
-    state.correction
-  );
+  const experimentSize = calculateExperimentSize({
+    baseline: state.baseline / 100,
+    mdeValue: mdeValue,
+    isRelativeMde: state.isRelativeMde,
+    alpha: state.alpha,
+    power: state.power,
+    variantCount: state.variants,
+    buffer: state.buffer,
+    testType: state.testType,
+    correctionMethod: state.correctionMethod,
+    trafficDistribution: getTrafficDistributionAsDecimals(calculatorState),
+  });
   const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
   const lowestPercentage = Math.min(...state.trafficDistribution) / 100;
   const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
+  // The smallest variant's sample size determines duration.
+  const smallestSampleSize = Math.min(...experimentSize.sampleSizePerGroup);
   const durationDays =
     lowestVariantDailyVisitors > 0
-      ? Math.ceil(sampleSize / lowestVariantDailyVisitors)
+      ? Math.ceil(smallestSampleSize / lowestVariantDailyVisitors)
       : 0;
   return {
     baseline: state.baseline,
     targetRate: mdeInfo.targetRate * 100,
-    sampleSize,
+    sampleSizePerGroup: experimentSize.sampleSizePerGroup,
+    totalSampleSize: experimentSize.totalSampleSize,
     durationDays,
   };
 }
 
+function getTrafficDistributionAsDecimals(state) {
+  return state.trafficDistribution.map((p) => p / 100);
+}
+
 function calculateTimeRowResult(days, state) {
   const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
-  const lowestPercentage = Math.min(...state.trafficDistribution) / 100;
-  const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
-  const sampleSizePerVariant = Math.ceil(days * lowestVariantDailyVisitors);
-  const mde = calculateMDEFromSampleSize(sampleSizePerVariant, state);
+  const totalSampleSize = Math.ceil(days * effectiveVisitors);
+  const mde = calculateMDEFromSampleSize(totalSampleSize, {
+    baseline: state.baseline,
+    alpha: state.alpha,
+    power: state.power,
+    variantCount: state.variants,
+    buffer: state.buffer,
+    testType: state.testType,
+    isRelativeMde: state.isRelativeMde,
+    correctionMethod: state.correctionMethod,
+    trafficDistribution: getTrafficDistributionAsDecimals(state),
+  });
   const mdeInfo = calculateMDE(
     state.baseline,
     mde,
-    state.isRelativeMode,
+    state.isRelativeMde,
     state.testType
   );
   const targetRate = mdeInfo.targetRate * 100;
@@ -660,8 +719,8 @@ function calculateTimeRowResult(days, state) {
     baseline: state.baseline,
     targetRate,
     mde,
-    isRelative: state.isRelativeMode,
-    visitorsPerVariant: sampleSizePerVariant,
+    isRelative: state.isRelativeMde,
+    totalSampleSize,
   };
 }
 
@@ -669,7 +728,7 @@ function render(state, results, errors) {
   renderFormInputs(state);
   renderDynamicText(state);
   renderAdvancedStatus(state);
-  renderMainResults(state, results, errors);
+  renderSingleEstimateResults(state, results, errors);
   renderUIState(state);
   renderVariantSliders(state);
   renderDataTables(state, results);
@@ -712,7 +771,7 @@ function renderFormInputs(state) {
 function renderDynamicText(state) {
   // Update the main MDE label based on test type and mode.
   const mdeLabels = getLabelsForTestType(state.testType);
-  const mdeModeUnit = state.isRelativeMode ? "(%)" : "(points)";
+  const mdeModeUnit = state.isRelativeMde ? "(%)" : "(points)";
   document.querySelector(
     'label[for="mde"]'
   ).textContent = `${mdeLabels.label} ${mdeModeUnit}`;
@@ -736,7 +795,7 @@ function renderDynamicText(state) {
   ).textContent = absoluteTooltipText;
   // Update the header of the MDE table.
   document.querySelector("#mdeTable th:first-child").innerHTML =
-    state.isRelativeMode ? "Δ (%)" : "Δ (points)";
+    state.isRelativeMde ? "Δ (%)" : "Δ (points)";
 }
 
 function renderAdvancedStatus(state) {
@@ -769,17 +828,40 @@ function isEqualDistribution(distribution, variantCount) {
   );
 }
 
-function renderMainResults(state, results, errors) {
-  const hasValidResults = results && (!errors || errors.length === 0);
-  if (hasValidResults) {
+function renderSingleEstimateResults(state, results, errors) {
+  const hasErrors = errors && errors.length > 0;
+  if (results && !hasErrors && "duration" in results) {
     durationValueElem.textContent = results.duration.toLocaleString();
-    sampleValueElem.textContent = results.sampleSizePerVariant.toLocaleString();
+    const sampleSizes = results.sampleSizePerVariant;
+    const allSame = sampleSizes.every((size) => size === sampleSizes[0]);
+    if (allSame) {
+      sampleValueElem.textContent = sampleSizes[0].toLocaleString();
+      sampleSubtitleElem.classList.remove("hidden");
+    } else {
+      const variantLabels = Array.from({ length: state.variants }, (_, i) => {
+        const letter = String.fromCharCode(65 + i);
+        return i === 0 ? `${letter} (Control)` : letter;
+      });
+      const stackedRowsHTML = sampleSizes
+        .map(
+          (size, i) => `
+          <div class="variant-row">
+            <span class="variant-label">${variantLabels[i]}</span>
+            <span class="variant-value">${size.toLocaleString()}</span>
+          </div>
+        `
+        )
+        .join("");
+      sampleValueElem.innerHTML = `<div class="stacked-variants">${stackedRowsHTML}</div>`;
+      sampleSubtitleElem.classList.add("hidden");
+    }
     timeEstimateElem.textContent = formatTimeEstimate(results.duration);
     explanationElem.innerHTML = getTestTypeExplanation(state, results);
   } else {
     durationValueElem.textContent = "—";
     sampleValueElem.textContent = "—";
-    timeEstimateElem.textContent = "...";
+    sampleSubtitleElem.classList.remove("hidden");
+    timeEstimateElem.textContent = "…";
     explanationElem.innerHTML = "Enter valid parameters to see the test plan.";
   }
 }
@@ -870,12 +952,16 @@ function renderVariantSliders(state) {
     variantDistributionContainer.innerHTML = "";
     for (let i = 0; i < state.variants; i++) {
       const letter = String.fromCharCode(65 + i);
+      const label =
+        i === 0
+          ? `${letter} <span class="control-label">(Control)</span>`
+          : letter;
       const percentage = state.trafficDistribution[i];
       const variantItem = document.createElement("div");
       variantItem.className = "variant-slider-item";
       variantItem.innerHTML = `
         <div class="variant-slider-header">
-          <div class="variant-letter-label">${letter}</div>
+          <div class="variant-letter-label">${label}</div>
           <div class="variant-percentage" id="percentage${letter}">${percentage}%</div>
         </div>
         <input
@@ -953,18 +1039,21 @@ function calculateNewDistribution(currentDistribution, changedIndex, newValue) {
 }
 
 function renderDataTables(state, results) {
-  const hasValidResults =
-    results && results.mdeTableData && results.timeTableData;
+  if (!results) {
+    mdeTable.querySelector("tbody").innerHTML = "";
+    timeTable.querySelector("tbody").innerHTML = "";
+    return;
+  }
   renderTableBody(
     mdeTable.querySelector("tbody"),
     state.mdeTableRows,
-    hasValidResults ? results.mdeTableData : null,
+    results.mdeTableData,
     "mde-input"
   );
   renderTableBody(
     timeTable.querySelector("tbody"),
     state.timeTableRows,
-    hasValidResults ? results.timeTableData : null,
+    results.timeTableData,
     "time-input"
   );
 }
@@ -1032,59 +1121,85 @@ function cacheExistingRows(tbodyEl, inputClass) {
 }
 
 function updateRowContent(row, result, inputClass) {
-  if (inputClass === "mde-input") {
-    row.children[1].textContent = result
-      ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
-      : "—";
-    row.children[2].textContent = result
-      ? `${result.durationDays.toLocaleString()} days`
-      : "—";
-    row.children[3].textContent = result
-      ? result.sampleSize.toLocaleString()
-      : "—";
-  } else {
-    row.children[1].textContent = result
-      ? result.visitorsPerVariant.toLocaleString()
-      : "—";
-    row.children[2].textContent = result
-      ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
-      : "—";
-    row.children[3].textContent = result
-      ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
-      : "—";
-  }
+  const inputValue = row.querySelector(`.${inputClass}`).value;
+  const tableType = inputClass === "mde-input" ? "mdeTable" : "timeTable";
+  const data = generateDisplayRowData(tableType, inputValue, result);
+  // Index 0 corresponds to the input field.
+  if (data[1]) row.children[1].textContent = data[1];
+  if (data[2]) row.children[2].textContent = data[2];
+  if (data[3]) row.children[3].textContent = data[3];
 }
 
 function createRowHtml(inputValue, result, index, inputClass) {
-  if (inputClass === "mde-input") {
+  const tableType = inputClass === "mde-input" ? "mdeTable" : "timeTable";
+  const data = generateDisplayRowData(tableType, inputValue, result);
+  if (tableType === "mdeTable") {
+    // Δ → Days table.
     return `
-      <td class="editable"><div class="input-wrapper"><input type="number" class="mde-input" value="${inputValue}" step="0.1" data-index="${index}"></div></td>
-      <td>${
-        result
-          ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
-          : "—"
-      }</td>
-      <td class="highlight">${
-        result ? `${result.durationDays.toLocaleString()} days` : "—"
-      }</td>
-      <td>${result ? result.sampleSize.toLocaleString() : "—"}</td>
+      <td class="editable"><div class="input-wrapper"><input type="number" class="mde-input" value="${data[0]}" step="0.1" data-index="${index}"></div></td>
+      <td>${data[1]}</td>
+      <td class="highlight">${data[2]}</td>
+      <td>${data[3]}</td>
     `;
   } else {
+    // Days → Δ table.
     return `
-      <td class="editable"><div class="input-wrapper"><input type="number" class="time-input" value="${inputValue}" min="1" step="1" data-index="${index}"></div></td>
-      <td>${result ? result.visitorsPerVariant.toLocaleString() : "—"}</td>
-      <td class="highlight">${
-        result
-          ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
-          : "—"
-      }</td>
-      <td>${
-        result
-          ? `${result.baseline.toFixed(1)}% → ${result.targetRate.toFixed(2)}%`
-          : "—"
-      }</td>
+      <td class="editable"><div class="input-wrapper"><input type="number" class="time-input" value="${data[0]}" min="1" step="1" data-index="${index}"></div></td>
+      <td>${data[1]}</td>
+      <td class="highlight">${data[2]}</td>
+      <td>${data[3]}</td>
     `;
   }
+}
+
+function generateDisplayRowData(tableType, inputValue, result) {
+  const data = generateRowDataObject(tableType, inputValue, result);
+  if (!data) return Array(4).fill("—");
+  if (tableType === "mdeTable") {
+    return [
+      data.inputValue,
+      data.crChange,
+      `${data.durationDays.toLocaleString()} days`,
+      data.totalSampleSize.toLocaleString(),
+    ];
+  } else {
+    // timeTable
+    return [
+      data.inputValue,
+      data.totalSampleSize.toLocaleString(),
+      data.mde,
+      data.crChange,
+    ];
+  }
+}
+
+function generateRowDataObject(tableType, inputValue, result) {
+  if (!result) {
+    return null;
+  }
+  const crChangeText = `${result.baseline.toFixed(
+    2
+  )}% → ${result.targetRate.toFixed(2)}%`;
+  if (tableType === "mdeTable") {
+    return {
+      inputValue: inputValue,
+      crChange: crChangeText,
+      durationDays: result.durationDays,
+      totalSampleSize: result.totalSampleSize,
+    };
+  }
+  if (tableType === "timeTable") {
+    const mdeText = `${result.mde.toFixed(2)}${
+      result.isRelative ? "%" : " pp"
+    }`;
+    return {
+      inputValue: inputValue,
+      totalSampleSize: result.totalSampleSize,
+      mde: mdeText,
+      crChange: crChangeText,
+    };
+  }
+  return null;
 }
 
 function animateReordering(elements, positionMap) {
@@ -1117,40 +1232,51 @@ function addDeleteButton(cell, index) {
 }
 
 function getTestTypeExplanation(state, results) {
-  const { testType, isRelativeMode, mde, baseline } = state;
-  const { duration } = results;
+  const { testType, isRelativeMde, mde, baseline } = state;
+  const { duration, totalSampleSize } = results;
   const timeText = `<span class="highlight">${formatTimeEstimate(
     duration
   )}</span>`;
   const mdeText = `<span class="highlight">${
-    isRelativeMode ? `${mde}%` : `${mde} percentage points`
+    isRelativeMde ? `${mde}%` : `${mde} percentage points`
   }</span>`;
-  // Calculate the absolute effect size in percentage points.
-  // For superiority, MDE can be negative (e.g. when the goal is to reduce a metric).
-  const effectSize = isRelativeMode ? baseline * (mde / 100) : mde;
-  // For symmetrical ranges (equivalence/two-tailed), we need the absolute margin.
-  const margin = Math.abs(effectSize);
+  const totalSampleText = `<span class="highlight">${totalSampleSize.toLocaleString()} participants</span>`;
+  const effectSizeInPoints = isRelativeMde ? baseline * (mde / 100) : mde;
+  const marginInPoints = Math.abs(effectSizeInPoints);
   const bounds = {
     from: `<span class="highlight">${baseline.toFixed(2)}%</span>`,
     // 'to' reflects the actual directional change for superiority.
-    to: `<span class="highlight">${(baseline + effectSize).toFixed(2)}%</span>`,
+    to: `<span class="highlight">${(baseline + effectSizeInPoints).toFixed(
+      2
+    )}%</span>`,
     // 'upper' and 'lower' create a symmetrical range for other test types.
-    upper: `<span class="highlight">${(baseline + margin).toFixed(2)}%</span>`,
-    lower: `<span class="highlight">${(baseline - margin).toFixed(2)}%</span>`,
+    upper: `<span class="highlight">${(baseline + marginInPoints).toFixed(
+      2
+    )}%</span>`,
+    lower: `<span class="highlight">${(baseline - marginInPoints).toFixed(
+      2
+    )}%</span>`,
   };
+  const introClause = `The experiment will need to collect data from ${totalSampleText} over ${timeText} to`;
+  let goalAndDetails;
   switch (testType) {
     case "superiority":
-      return `The experiment will need to run for ${timeText} to detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to}).`;
+      goalAndDetails = `detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to})`;
+      break;
     case "non-inferiority":
-      // The 'lower' bound represents the worst acceptable outcome.
-      return `The experiment will need to run for ${timeText} to prove the new rate is not worse than ${bounds.lower}.`;
+      goalAndDetails = `prove the new rate is not worse than ${bounds.lower}`;
+      break;
     case "two-tailed":
-      return `The experiment will need to run for ${timeText} to detect a ${mdeText} change in either direction (from ${bounds.from} to ${bounds.upper} or to ${bounds.lower}).`;
+      goalAndDetails = `detect a ${mdeText} change in either direction (from ${bounds.from} to ${bounds.upper} or to ${bounds.lower})`;
+      break;
     case "equivalence":
-      return `The experiment will need to run for ${timeText} to prove both variants perform equivalently, with the new rate falling within the range of ${bounds.lower} to ${bounds.upper}.`;
+      goalAndDetails = `prove the variants perform equivalently, with the new rate falling within the range of ${bounds.lower} to ${bounds.upper}`;
+      break;
     default:
-      return `The experiment will need to run for ${timeText} to detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to}).`;
+      goalAndDetails = `detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to})`;
+      break;
   }
+  return `${introClause} ${goalAndDetails}.`;
 }
 
 function formatTimeEstimate(days) {
@@ -1188,7 +1314,7 @@ function formatTimeEstimate(days) {
 function downloadTableAsCSV(tableId) {
   const stateKey = tableId === "mdeTable" ? "mdeTableRows" : "timeTableRows";
   const dataKey = tableId === "mdeTable" ? "mdeTableData" : "timeTableData";
-  const results = calculateAllResults(calculatorState);
+  const results = calculateResultsForActiveTab(calculatorState);
   if (!results) {
     alert("Please fix the errors before downloading.");
     return;
@@ -1204,27 +1330,18 @@ function downloadTableAsCSV(tableId) {
 function createCSVContentFromData(tableId, rowData, resultsData) {
   const table = document.getElementById(tableId);
   const headers = Array.from(table.querySelectorAll("thead th"))
-    .map((th) => th.textContent.trim())
+    .map((th) => {
+      // Use the data-attribute if it exists, otherwise use the normal text.
+      const csvHeader = th.dataset.csvHeader || th.textContent;
+      return csvHeader.trim();
+    })
     .join(";");
   const rows = rowData
     .map((rowItem, index) => {
       const result = resultsData[index];
-      if (!result) return "";
-      if (tableId === "mdeTable") {
-        return [
-          rowItem,
-          `${result.baseline.toFixed(1)}% -> ${result.targetRate.toFixed(2)}%`,
-          result.durationDays,
-          result.sampleSize,
-        ].join(";");
-      } else {
-        return [
-          rowItem,
-          result.visitorsPerVariant,
-          `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`,
-          `${result.baseline.toFixed(1)}% -> ${result.targetRate.toFixed(2)}%`,
-        ].join(";");
-      }
+      const rowValues = generateExportRowData(tableId, rowItem, result);
+      if (rowValues.length === 0) return "";
+      return rowValues.join(";");
     })
     .join("\n");
   const csvContent = `${headers}\n${rows}`;
@@ -1239,6 +1356,22 @@ function createCSVContentFromData(tableId, rowData, resultsData) {
     ? `${sanitizedName}-${tableType}-${dateStr}.csv`
     : `${CSVPREFIX}-${tableType}-${dateStr}.csv`;
   return { content: csvContent, filename };
+}
+
+function generateExportRowData(tableType, inputValue, result) {
+  const data = generateRowDataObject(tableType, inputValue, result);
+  if (!data) return [];
+  if (tableType === "mdeTable") {
+    return [
+      data.inputValue,
+      data.crChange,
+      data.durationDays,
+      data.totalSampleSize,
+    ];
+  } else {
+    // timeTable
+    return [data.inputValue, data.totalSampleSize, data.mde, data.crChange];
+  }
 }
 
 function downloadCSV(content, filename) {
@@ -1288,7 +1421,7 @@ function getModificationDescription(key, currentValue) {
     alpha: `Significance level: ${currentValue}`,
     power: `Statistical power: ${currentValue}`,
     testType: `Test type: ${formatTestType(currentValue)}`,
-    correction: `Multiple comparisons correction: ${formatCorrection(
+    correctionMethod: `Multiple comparisons correction: ${formatCorrection(
       currentValue
     )}`,
     trafficFlow: `Traffic flow: ${currentValue}%`,
@@ -1320,14 +1453,14 @@ function encodeStateToURL(state) {
   const params = {
     bl: state.baseline,
     mde: state.mde,
-    rel: state.isRelativeMode ? 1 : 0,
+    rel: state.isRelativeMde ? 1 : 0,
     var: state.variants,
     tf: state.trafficFlow,
     bf: state.buffer,
     al: state.alpha,
     pw: state.power,
     tt: state.testType,
-    cr: state.correction,
+    cr: state.correctionMethod,
     vs: state.visitors,
     name: state.planName,
     tab: state.activeTab.replace("tab-", ""),
