@@ -1296,24 +1296,19 @@ function addDeleteButton(cell, index) {
 }
 
 function getTestTypeExplanation(state, results) {
-  const { testType, isRelativeMde, mde, baseline } = state;
+  const { testType, isRelativeMde, mde, baseline, variants = 2 } = state;
   const { duration, totalSampleSize } = results;
   const timeText = `<span class="highlight">${formatTimeEstimate(
     duration
   )}</span>`;
-  const mdeText = `<span class="highlight">${
-    isRelativeMde ? `${mde}%` : `${mde} percentage points`
-  }</span>`;
   const totalSampleText = `<span class="highlight">${totalSampleSize.toLocaleString()} participants</span>`;
   const effectSizeInPoints = isRelativeMde ? baseline * (mde / 100) : mde;
   const marginInPoints = Math.abs(effectSizeInPoints);
   const bounds = {
     from: `<span class="highlight">${baseline.toFixed(2)}%</span>`,
-    // 'to' reflects the actual directional change for superiority.
     to: `<span class="highlight">${(baseline + effectSizeInPoints).toFixed(
       2
     )}%</span>`,
-    // 'upper' and 'lower' create a symmetrical range for other test types.
     upper: `<span class="highlight">${(baseline + marginInPoints).toFixed(
       2
     )}%</span>`,
@@ -1321,26 +1316,28 @@ function getTestTypeExplanation(state, results) {
       2
     )}%</span>`,
   };
-  const introClause = `The experiment will need to collect data from ${totalSampleText} over ${timeText} to`;
-  let goalAndDetails;
+  const nonInferioritySubject =
+    variants > 2 ? "any of the new versions" : "the new version";
+  const equivalenceSubject = variants > 2 ? "all variants" : "both versions";
+  let outcome;
   switch (testType) {
     case "superiority":
-      goalAndDetails = `detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to})`;
+      outcome = `reliably detect an improvement from ${bounds.from} to ${bounds.to}`;
       break;
     case "non-inferiority":
-      goalAndDetails = `prove the new rate is not worse than ${bounds.lower}`;
+      outcome = `prove ${nonInferioritySubject} is not meaningfully worse (by staying above ${bounds.lower})`;
       break;
     case "two-tailed":
-      goalAndDetails = `detect a ${mdeText} change in either direction (from ${bounds.from} to ${bounds.upper} or to ${bounds.lower})`;
+      outcome = `reliably detect a change from ${bounds.from} to ${bounds.upper} or ${bounds.lower}`;
       break;
     case "equivalence":
-      goalAndDetails = `prove the variants perform equivalently, with the new rate falling within the range of ${bounds.lower} to ${bounds.upper}`;
+      outcome = `prove ${equivalenceSubject} perform similarly (within ${bounds.lower} to ${bounds.upper})`;
       break;
     default:
-      goalAndDetails = `detect a ${mdeText} improvement (from ${bounds.from} to ${bounds.to})`;
+      outcome = `reliably detect an improvement from ${bounds.from} to ${bounds.to}`;
       break;
   }
-  return `${introClause} ${goalAndDetails}.`;
+  return `Will ${outcome} with ${totalSampleText} over ${timeText}.`;
 }
 
 function formatTimeEstimate(days) {
