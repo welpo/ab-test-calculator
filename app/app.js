@@ -51,8 +51,8 @@ const calculatorState = {
   buffer: ADVANCED_DEFAULTS.buffer,
 
   // For "Δ → Time" and "Time → Δ" tables.
-  mdeTableRows: DEFAULT_MDES,
-  timeTableRows: DEFAULT_TIMES,
+  mdeTableRows: [...DEFAULT_MDES],
+  timeTableRows: [...DEFAULT_TIMES],
 
   /** The ID of the currently active results tab.
    * Values: 'tab-single', 'tab-table', 'tab-time' */
