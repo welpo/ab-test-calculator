@@ -21,6 +21,20 @@ const ADVANCED_DEFAULTS = {
   trafficFlow: 100,
   buffer: 0,
 };
+const mdeTableColumnConfig = [
+  // Configuration for the "Δ → Days" table.
+  { key: "inputValue", header: "Δ", isEditable: true, step: 0.1 },
+  { key: "durationDays", header: "Days", isHighlight: true },
+  { key: "crChange", header: "From → To" },
+  { key: "totalSampleSize", header: "Total Visitors" },
+];
+const timeTableColumnConfig = [
+  // Configuration for the "Days → Δ" table.
+  { key: "inputValue", header: "Days", isEditable: true, step: 1, min: 1 },
+  { key: "mde", header: "Δ", isHighlight: true },
+  { key: "crChange", header: "From → To" },
+  { key: "totalSampleSize", header: "Total visitors" },
+];
 
 const calculatorState = {
   /** Daily visitors to the page being tested. */
@@ -138,7 +152,10 @@ function loadPersistentSettings() {
   if (typeof savedSettings.isAdvancedOpen === "boolean") {
     calculatorState.isAdvancedOpen = savedSettings.isAdvancedOpen;
   }
-  if (savedSettings.lastTab && ["tab-single", "tab-table", "tab-time"].includes(savedSettings.lastTab)) {
+  if (
+    savedSettings.lastTab &&
+    ["tab-single", "tab-table", "tab-time"].includes(savedSettings.lastTab)
+  ) {
     calculatorState.activeTab = savedSettings.lastTab;
   }
   if (settingsCheckbox) {
@@ -464,11 +481,11 @@ function setupEventListeners() {
     updateDocumentTitle();
   });
   planNameInput.addEventListener("keydown", function (event) {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    shareButton.click();
-  }
-});
+    if (event.key === "Enter") {
+      event.preventDefault();
+      shareButton.click();
+    }
+  });
 }
 
 function debounce(func, delay) {
@@ -1081,17 +1098,25 @@ function renderDataTables(state, results) {
     mdeTable.querySelector("tbody"),
     state.mdeTableRows,
     results.mdeTableData,
-    "mde-input"
+    "mde-input",
+    mdeTableColumnConfig
   );
   renderTableBody(
     timeTable.querySelector("tbody"),
     state.timeTableRows,
     results.timeTableData,
-    "time-input"
+    "time-input",
+    timeTableColumnConfig
   );
 }
 
-function renderTableBody(tbodyEl, rowInputData, rowResultData, inputClass) {
+function renderTableBody(
+  tbodyEl,
+  rowInputData,
+  rowResultData,
+  inputClass,
+  config
+) {
   if (!rowResultData) {
     tbodyEl.innerHTML = "";
     return;
@@ -1100,14 +1125,20 @@ function renderTableBody(tbodyEl, rowInputData, rowResultData, inputClass) {
     cacheExistingRows(tbodyEl, inputClass);
   const finalElements = [];
   const renderedElements = new Set();
+  const tableType = inputClass === "mde-input" ? "mdeTable" : "timeTable";
   rowInputData.forEach((inputValue, index) => {
     const result = rowResultData[index];
     const availableElements = valueToElementMap.get(String(inputValue));
     const rowToReuse =
       availableElements?.length > 0 ? availableElements.shift() : null;
+    const dataObject = result
+      ? generateRowDataObject(tableType, inputValue, result)
+      : null;
     if (rowToReuse) {
       renderedElements.add(rowToReuse);
-      updateRowContent(rowToReuse, result, inputClass);
+      if (dataObject) {
+        updateRowContent(rowToReuse, dataObject);
+      }
       rowToReuse.querySelector(`.${inputClass}`).dataset.index = index;
       rowToReuse
         .querySelector(".delete-row")
@@ -1115,7 +1146,9 @@ function renderTableBody(tbodyEl, rowInputData, rowResultData, inputClass) {
       finalElements.push(rowToReuse);
     } else {
       const newRow = document.createElement("tr");
-      newRow.innerHTML = createRowHtml(inputValue, result, index, inputClass);
+      if (dataObject) {
+        newRow.innerHTML = createRowHtml(dataObject, config, index, inputClass);
+      }
       const editableCell = newRow.querySelector(".editable");
       if (editableCell) addDeleteButton(editableCell, index);
       finalElements.push(newRow);
@@ -1153,36 +1186,34 @@ function cacheExistingRows(tbodyEl, inputClass) {
   return { elementToPositionMap, valueToElementMap, existingRows };
 }
 
-function updateRowContent(row, result, inputClass) {
-  const inputValue = row.querySelector(`.${inputClass}`).value;
-  const tableType = inputClass === "mde-input" ? "mdeTable" : "timeTable";
-  const data = generateDisplayRowData(tableType, inputValue, result);
-  // Index 0 corresponds to the input field.
-  if (data[1]) row.children[1].textContent = data[1];
-  if (data[2]) row.children[2].textContent = data[2];
-  if (data[3]) row.children[3].textContent = data[3];
+function updateRowContent(row, dataObject) {
+  for (const [key, value] of Object.entries(dataObject)) {
+    const cell = row.querySelector(`td[data-col="${key}"]`);
+    if (cell && !cell.classList.contains("editable")) {
+      cell.textContent = value || "—";
+    }
+  }
 }
 
-function createRowHtml(inputValue, result, index, inputClass) {
-  const tableType = inputClass === "mde-input" ? "mdeTable" : "timeTable";
-  const data = generateDisplayRowData(tableType, inputValue, result);
-  if (tableType === "mdeTable") {
-    // Δ → Days table.
-    return `
-      <td class="editable"><div class="input-wrapper"><input type="number" class="mde-input" value="${data[0]}" step="0.1" data-index="${index}"></div></td>
-      <td>${data[1]}</td>
-      <td class="highlight">${data[2]}</td>
-      <td>${data[3]}</td>
-    `;
-  } else {
-    // Days → Δ table.
-    return `
-      <td class="editable"><div class="input-wrapper"><input type="number" class="time-input" value="${data[0]}" min="1" step="1" data-index="${index}"></div></td>
-      <td>${data[1]}</td>
-      <td class="highlight">${data[2]}</td>
-      <td>${data[3]}</td>
-    `;
-  }
+function createRowHtml(dataObject, config, index, inputClass) {
+  const cells = config
+    .map((col) => {
+      const content = dataObject[col.key] || "—";
+      const classes = [];
+      if (col.isHighlight) classes.push("highlight");
+      if (col.isEditable) classes.push("editable");
+      const classAttr =
+        classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
+      const dataAttr = `data-col="${col.key}"`;
+      if (col.isEditable) {
+        const stepAttr = col.step ? `step="${col.step}"` : "";
+        const minAttr = col.min ? `min="${col.min}"` : "";
+        return `<td${classAttr} ${dataAttr}><div class="input-wrapper"><input type="number" class="${inputClass}" value="${content}" ${stepAttr} ${minAttr} data-index="${index}"></div></td>`;
+      }
+      return `<td${classAttr} ${dataAttr}>${content}</td>`;
+    })
+    .join("");
+  return `<tr>${cells}</tr>`;
 }
 
 function generateDisplayRowData(tableType, inputValue, result) {
@@ -1217,8 +1248,8 @@ function generateRowDataObject(tableType, inputValue, result) {
     return {
       inputValue: inputValue,
       crChange: crChangeText,
-      durationDays: result.durationDays,
-      totalSampleSize: result.totalSampleSize,
+      durationDays: `${result.durationDays.toLocaleString()} days`,
+      totalSampleSize: result.totalSampleSize.toLocaleString(),
     };
   }
   if (tableType === "timeTable") {
@@ -1227,7 +1258,7 @@ function generateRowDataObject(tableType, inputValue, result) {
     }`;
     return {
       inputValue: inputValue,
-      totalSampleSize: result.totalSampleSize,
+      totalSampleSize: result.totalSampleSize.toLocaleString(),
       mde: mdeText,
       crChange: crChangeText,
     };
@@ -1374,14 +1405,13 @@ function downloadTableAsCSV(tableId) {
   const stateKey = tableId === "mdeTable" ? "mdeTableRows" : "timeTableRows";
   const dataKey = tableId === "mdeTable" ? "mdeTableData" : "timeTableData";
   const results = calculateResultsForActiveTab(calculatorState);
-  if (!results) {
-    alert("Please fix the errors before downloading.");
-    return;
-  }
+  const config =
+    tableId === "mdeTable" ? mdeTableColumnConfig : timeTableColumnConfig;
   const { content, filename } = createCSVContentFromData(
     tableId,
     calculatorState[stateKey],
-    results[dataKey]
+    results[dataKey],
+    config
   );
   downloadCSV(content, filename);
 }
@@ -1390,15 +1420,16 @@ function createCSVContentFromData(tableId, rowData, resultsData) {
   const table = document.getElementById(tableId);
   const headers = Array.from(table.querySelectorAll("thead th"))
     .map((th) => {
-      // Use the data-attribute if it exists, otherwise use the normal text.
       const csvHeader = th.dataset.csvHeader || th.textContent;
       return csvHeader.trim();
     })
     .join(";");
+  const config =
+    tableId === "mdeTable" ? mdeTableColumnConfig : timeTableColumnConfig;
   const rows = rowData
     .map((rowItem, index) => {
       const result = resultsData[index];
-      const rowValues = generateExportRowData(tableId, rowItem, result);
+      const rowValues = generateExportRowData(result, config, rowItem);
       if (rowValues.length === 0) return "";
       return rowValues.join(";");
     })
@@ -1417,20 +1448,21 @@ function createCSVContentFromData(tableId, rowData, resultsData) {
   return { content: csvContent, filename };
 }
 
-function generateExportRowData(tableType, inputValue, result) {
-  const data = generateRowDataObject(tableType, inputValue, result);
-  if (!data) return [];
-  if (tableType === "mdeTable") {
-    return [
-      data.inputValue,
-      data.crChange,
-      data.durationDays,
-      data.totalSampleSize,
-    ];
-  } else {
-    // timeTable
-    return [data.inputValue, data.totalSampleSize, data.mde, data.crChange];
-  }
+function generateExportRowData(result, config, inputValue) {
+  if (!result) return [];
+  const dataForExport = {
+    inputValue: inputValue,
+    durationDays: result.durationDays,
+    crChange: `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(
+      2
+    )}%`,
+    totalSampleSize: result.totalSampleSize,
+    mde:
+      result.mde !== undefined
+        ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
+        : null,  // No MDE in time table.
+  };
+  return config.map((col) => dataForExport[col.key] || "");
 }
 
 function downloadCSV(content, filename) {
