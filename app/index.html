@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=47bbf690">
+    <link rel="stylesheet" href="styles.css?h=69efd988">
 </head>
 
 <body>
@@ -190,6 +190,29 @@
                                 <p class="result-value" id="sampleValue">24,601</p>
                                 <p class="result-subtitle" id="sampleSubtitle">per variant</p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart visualization -->
+                    <div class="chart-section" id="chartSection">
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <div class="legend-color legend-undetectable"></div>
+                                <span id="legendUndetectable">Inconclusive</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-baseline"></div>
+                                <span id="legendBaseline">Baseline</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-detectable"></div>
+                                <span id="legendDetectable">Detectable</span>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-bar" id="chartBar"></div>
+                            <div class="chart-labels" id="chartLabels"></div>
                         </div>
                     </div>
 
@@ -592,7 +615,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=5882eadc"></script>
+<script defer type="module" src="app.js?h=8d93a22e"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

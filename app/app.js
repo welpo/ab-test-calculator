@@ -21,6 +21,28 @@ const ADVANCED_DEFAULTS = {
   trafficFlow: 100,
   buffer: 0,
 };
+const LEGEND_LABELS = {
+  superiority: {
+    undetectable: "Inconclusive",
+    baseline: "Baseline",
+    detectable: "Detectable",
+  },
+  "two-tailed": {
+    undetectable: "Inconclusive",
+    baseline: "Baseline",
+    detectable: "Detectable",
+  },
+  "non-inferiority": {
+    undetectable: "Inferior",
+    baseline: "Baseline",
+    detectable: "Non-inferior",
+  },
+  equivalence: {
+    undetectable: "Different",
+    baseline: "Baseline",
+    detectable: "Equivalent",
+  },
+};
 const mdeTableColumnConfig = [
   // Configuration for the "Δ → Days" table.
   { key: "inputValue", header: "Δ", isEditable: true, step: 0.1 },
@@ -88,6 +110,11 @@ const tabSingle = document.getElementById("tab-single");
 const tabTable = document.getElementById("tab-table");
 const tabSingleLabel = document.querySelector('label[for="tab-single"]');
 const tabTableLabel = document.querySelector('label[for="tab-table"]');
+
+// Legend elements.
+const legendUndetectable = document.getElementById("legendUndetectable");
+const legendBaseline = document.getElementById("legendBaseline");
+const legendDetectable = document.getElementById("legendDetectable");
 
 // Advanced settings.
 const settingsCheckbox = document.getElementById("settings-checkbox");
@@ -585,6 +612,8 @@ function getMdeErrors(state) {
       return getTwoTailedMdeErrors(state, mdeLabel);
     case "non-inferiority":
       return getNonInferiorityMdeErrors(state, mdeLabel);
+    case "equivalence":
+      return getEquivalenceMdeErrors(state, mdeLabel);
     default:
       return [];
   }
@@ -664,6 +693,35 @@ function getNonInferiorityMdeErrors(state, mdeLabel) {
     ];
   }
   return [];
+}
+
+function getEquivalenceMdeErrors(state, mdeLabel) {
+  const { mde, baseline, isRelativeMde } = state;
+  const errors = [];
+  if (mde < 0) {
+    return [
+      { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
+    ];
+  }
+  const upperBound = calculateTargetRate(baseline, mde, isRelativeMde);
+  if (upperBound >= 100) {
+    errors.push({
+      key: "mde",
+      message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
+        2
+      )}%`,
+    });
+  }
+  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  if (lowerBound <= 0) {
+    errors.push({
+      key: "mde",
+      message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
+        2
+      )}%`,
+    });
+  }
+  return errors;
 }
 
 function calculateTargetRate(baseline, mde, isRelativeMde) {
@@ -907,6 +965,7 @@ function renderSingleEstimateResults(state, results, errors) {
     }
     timeEstimateElem.textContent = formatTimeEstimate(results.duration);
     explanationElem.innerHTML = getTestTypeExplanation(state, results);
+    updateChartVisualization(state);
   } else {
     durationValueElem.textContent = "—";
     sampleValueElem.textContent = "—";
@@ -1317,27 +1376,214 @@ function getTestTypeExplanation(state, results) {
     )}%</span>`,
   };
   const nonInferioritySubject =
-    variants > 2 ? "any of the new versions" : "the new version";
-  const equivalenceSubject = variants > 2 ? "all variants" : "both versions";
+    variants > 2 ? "the new versions" : "the new version";
+  const equivalenceSubject = variants > 2 ? "the variants" : "both versions";
   let outcome;
   switch (testType) {
     case "superiority":
-      outcome = `reliably detect an improvement from ${bounds.from} to ${bounds.to}`;
+      outcome = `reliably detect an <span class="text-green">improvement from ${bounds.from} to ${bounds.to}</span>`;
       break;
     case "non-inferiority":
-      outcome = `prove ${nonInferioritySubject} is not meaningfully worse (by staying above ${bounds.lower})`;
+      outcome = `prove ${nonInferioritySubject} ${variants > 2 ? "are" : "is"} <span class="text-green">not meaningfully worse (by staying above ${bounds.lower})</span>`;
       break;
     case "two-tailed":
-      outcome = `reliably detect a change from ${bounds.from} to ${bounds.upper} or ${bounds.lower}`;
+      outcome = `reliably detect a <span class="text-green">change from ${bounds.from} to ${bounds.upper} or ${bounds.lower}</span>`;
       break;
     case "equivalence":
-      outcome = `prove ${equivalenceSubject} perform similarly (within ${bounds.lower} to ${bounds.upper})`;
+      outcome = `prove ${equivalenceSubject} <span class="text-green">perform similarly (within ${bounds.lower} to ${bounds.upper})</span>`;
       break;
     default:
-      outcome = `reliably detect an improvement from ${bounds.from} to ${bounds.to}`;
+      outcome = `reliably detect an <span class="text-green">improvement from ${bounds.from} to ${bounds.to}</span>`;
       break;
   }
   return `Will ${outcome} with ${totalSampleText} over ${timeText}.`;
+}
+
+function calculateBoundaries(baseline, effect, isRelative, testType) {
+  const effectValue = isRelative ? baseline * (effect / 100) : effect;
+  switch (testType) {
+    case "superiority":
+      return { lower: null, upper: baseline + effectValue };
+    case "two-tailed":
+      return { lower: baseline - effectValue, upper: baseline + effectValue };
+    case "non-inferiority":
+      return { lower: baseline - effectValue, upper: null };
+    case "equivalence":
+      return { lower: baseline - effectValue, upper: baseline + effectValue };
+    default:
+      return { lower: null, upper: baseline + effectValue };
+  }
+}
+
+function roundToNice(value) {
+  if (value <= 0) return 0;
+  if (value <= 1) return Math.ceil(value * 20) / 20;
+  if (value <= 5) return Math.ceil(value * 10) / 10;
+  if (value <= 20) return Math.ceil(value * 2) / 2;
+  if (value <= 100) return Math.ceil(value);
+  return Math.ceil(value / 10) * 10;
+}
+
+function calculateOptimalScale(baseline, boundaries) {
+  const criticalPoints = [baseline];
+  if (boundaries.lower !== null) criticalPoints.push(boundaries.lower);
+  if (boundaries.upper !== null) criticalPoints.push(boundaries.upper);
+  const minCritical = Math.min(...criticalPoints);
+  const maxCritical = Math.max(...criticalPoints);
+  const minRange = Math.max(baseline * 0.5, 1);
+  const range = Math.max(maxCritical - minCritical, minRange);
+  const padding = range * 0.3;
+  let minBound = Math.max(0, minCritical - padding);
+  let maxBound = maxCritical + padding;
+  if (maxBound - minBound < baseline * 0.8) {
+    const center = (minBound + maxBound) / 2;
+    const halfRange = baseline * 0.4;
+    minBound = Math.max(0, center - halfRange);
+    maxBound = center + halfRange;
+  }
+  return { min: roundToNice(minBound), max: Math.min(100, roundToNice(maxBound)) };
+}
+
+function formatBoundaryValue(value) {
+  if (value < 1) return value.toFixed(2) + "%";
+  if (value < 10) return value.toFixed(1) + "%";
+  return Math.round(value) + "%";
+}
+
+function generateLabels(min, max, boundaries, testType, count = 6) {
+  const shouldShowLeftExtension = (testType === "two-tailed" || testType === "superiority-negative") && boundaries.lower !== null && min > 0.01;
+  const shouldShowRightExtension = ((testType === "superiority" || testType === "two-tailed") && boundaries.upper !== null && max < 99.99) || (testType === "non-inferiority" && boundaries.lower !== null && max < 99.99);
+  const labels = [];
+  for (let i = 0; i < count; i++) {
+    const value = min + (max - min) * (i / (count - 1));
+    labels.push(formatBoundaryValue(value));
+  }
+  if (shouldShowRightExtension) {
+    const lastLabelValue = labels[count - 1];
+    if (count >= 2 && labels[count - 2] === lastLabelValue) {
+      labels[count - 2] = "";
+    }
+    labels[count - 1] = "≥" + lastLabelValue;
+  }
+  if (shouldShowLeftExtension) {
+    const firstLabelValue = labels[0];
+    if (count >= 2 && labels[1] === firstLabelValue) {
+      labels[1] = "";
+    }
+    labels[0] = "≤" + firstLabelValue;
+  }
+  return labels;
+}
+
+function updateChart(baseline, boundaries, scale, testType) {
+  const chartBar = document.getElementById("chartBar");
+  const chartLabels = document.getElementById("chartLabels");
+  if (!chartBar || !chartLabels) return;
+  chartBar.innerHTML = "";
+  chartLabels.innerHTML = "";
+  const baselinePos = ((baseline - scale.min) / (scale.max - scale.min)) * 100;
+  const lowerPos =
+    boundaries.lower !== null
+      ? ((boundaries.lower - scale.min) / (scale.max - scale.min)) * 100
+      : null;
+  const upperPos =
+    boundaries.upper !== null
+      ? ((boundaries.upper - scale.min) / (scale.max - scale.min)) * 100
+      : null;
+  if (testType === "superiority") {
+    const undetectable = document.createElement("div");
+    undetectable.className = "zone zone-undetectable zone-left";
+    undetectable.style.left = "0%";
+    undetectable.style.width = upperPos + "%";
+    chartBar.appendChild(undetectable);
+    const detectable = document.createElement("div");
+    detectable.className = "zone zone-detectable zone-right";
+    detectable.style.left = upperPos + "%";
+    detectable.style.width = 100 - upperPos + "%";
+    chartBar.appendChild(detectable);
+  } else if (testType === "two-tailed") {
+    const detectableLeft = document.createElement("div");
+    detectableLeft.className = "zone zone-detectable zone-left";
+    detectableLeft.style.left = "0%";
+    detectableLeft.style.width = lowerPos + "%";
+    chartBar.appendChild(detectableLeft);
+    const undetectable = document.createElement("div");
+    undetectable.className = "zone zone-undetectable zone-middle";
+    undetectable.style.left = lowerPos + "%";
+    undetectable.style.width = upperPos - lowerPos + "%";
+    chartBar.appendChild(undetectable);
+    const detectableRight = document.createElement("div");
+    detectableRight.className = "zone zone-detectable zone-right";
+    detectableRight.style.left = upperPos + "%";
+    detectableRight.style.width = 100 - upperPos + "%";
+    chartBar.appendChild(detectableRight);
+  } else if (testType === "non-inferiority") {
+    const undetectable = document.createElement("div");
+    undetectable.className = "zone zone-undetectable zone-left";
+    undetectable.style.left = "0%";
+    undetectable.style.width = lowerPos + "%";
+    chartBar.appendChild(undetectable);
+    const detectable = document.createElement("div");
+    detectable.className = "zone zone-detectable zone-right";
+    detectable.style.left = lowerPos + "%";
+    detectable.style.width = 100 - lowerPos + "%";
+    chartBar.appendChild(detectable);
+  } else if (testType === "equivalence") {
+    const undetectableLeft = document.createElement("div");
+    undetectableLeft.className = "zone zone-undetectable zone-left";
+    undetectableLeft.style.left = "0%";
+    undetectableLeft.style.width = lowerPos + "%";
+    chartBar.appendChild(undetectableLeft);
+    const detectable = document.createElement("div");
+    detectable.className = "zone zone-detectable zone-middle";
+    detectable.style.left = lowerPos + "%";
+    detectable.style.width = upperPos - lowerPos + "%";
+    chartBar.appendChild(detectable);
+    const undetectableRight = document.createElement("div");
+    undetectableRight.className = "zone zone-undetectable zone-right";
+    undetectableRight.style.left = upperPos + "%";
+    undetectableRight.style.width = 100 - upperPos + "%";
+    chartBar.appendChild(undetectableRight);
+  }
+  const baselineMarker = document.createElement("div");
+  baselineMarker.className = "baseline-marker";
+  baselineMarker.style.left = baselinePos + "%";
+  chartBar.appendChild(baselineMarker);
+  const labels = generateLabels(scale.min, scale.max, boundaries, testType);
+  labels.forEach((label, index) => {
+    const labelElement = document.createElement("span");
+    labelElement.textContent = label;
+    if (
+      (index === 0 && label.includes("≤")) ||
+      (index === labels.length - 1 && label.includes("≥"))
+    ) {
+      labelElement.setAttribute("data-boundary", "true");
+    }
+    chartLabels.appendChild(labelElement);
+  });
+}
+
+function updateLegendLabels(testType) {
+  const labels = LEGEND_LABELS[testType];
+  if (legendUndetectable && legendBaseline && legendDetectable) {
+    legendUndetectable.textContent = labels.undetectable;
+    legendBaseline.textContent = labels.baseline;
+    legendDetectable.textContent = labels.detectable;
+  } else {
+  }
+}
+
+function updateChartVisualization(state) {
+  const { testType, baseline, mde, isRelativeMde } = state;
+  const boundaries = calculateBoundaries(
+    baseline,
+    mde,
+    isRelativeMde,
+    testType
+  );
+  const scale = calculateOptimalScale(baseline, boundaries);
+  updateChart(baseline, boundaries, scale, testType);
+  updateLegendLabels(testType);
 }
 
 function formatTimeEstimate(days) {
@@ -1457,7 +1703,7 @@ function generateExportRowData(result, config, inputValue) {
     mde:
       result.mde !== undefined
         ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
-        : null,  // No MDE in time table.
+        : null, // No MDE in time table.
   };
   return config.map((col) => dataForExport[col.key] || "");
 }

@@ -18,6 +18,9 @@
     --color-error-bg: #fef2f2;
     --color-error-border: #ef4444;
     --color-error-text: #dc2626;
+    --color-detectable: #10b981;
+    --color-undetectable: #d1d5db;
+    --color-baseline: #ef4444;
 
     /* Sizing variables */
     --border-radius: 5px;
@@ -70,6 +73,9 @@
         --color-error-bg: #2d1b1b;
         --color-error-border: #dc2626;
         --color-error-text: #fca5a5;
+        --color-detectable: #059669;
+        --color-undetectable: #4b5563;
+        --color-baseline: #dc2626;
     }
 }
 
@@ -679,6 +685,125 @@ select.input-field {
 .highlight {
     color: var(--color-text);
     font-weight: 600;
+}
+
+/* ========== CHART VISUALIZATION ========== */
+.chart-section {
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 12px;
+    font-size: var(--font-size-sm);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    border-radius: 2px;
+    width: 12px;
+    height: 12px;
+}
+
+.legend-detectable {
+    background: var(--color-detectable);
+}
+
+.legend-undetectable {
+    background: var(--color-undetectable);
+}
+
+.legend-baseline {
+    background: var(--color-baseline);
+}
+
+.chart-container {
+    position: relative;
+    margin-bottom: 0;
+    height: 60px;
+}
+
+.chart-bar {
+    position: relative;
+    border-radius: 6px;
+    height: 32px;
+    overflow: hidden;
+}
+
+.zone {
+    position: absolute;
+    top: 0;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.zone-left {
+    border-radius: 6px 0 0 6px;
+}
+
+.zone-right {
+    border-radius: 0 6px 6px 0;
+}
+
+.zone-middle {
+    border-radius: 0;
+}
+
+.zone-detectable {
+    background: var(--color-detectable);
+}
+
+.zone-undetectable {
+    background: var(--color-undetectable);
+}
+
+.baseline-marker {
+    position: absolute;
+    top: -10px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    background: var(--color-baseline);
+    width: 3px;
+    height: 52px;
+}
+
+.baseline-marker::after {
+    position: absolute;
+    top: -4px;
+    left: -3px;
+    border-radius: 50%;
+    background: var(--color-baseline);
+    width: 9px;
+    height: 9px;
+    content: '';
+}
+
+.chart-labels {
+    display: flex;
+    justify-content: space-between;
+    color: var(--color-text-light);
+    font-size: var(--font-size-xs);
+}
+
+.chart-labels span[data-boundary="true"] {
+    color: var(--color-detectable);
+    font-weight: 600;
+}
+
+.text-green {
+    color: var(--color-detectable);
+}
+
+.text-green .highlight {
+    color: var(--color-detectable);
 }
 
 /* ========== TIPS SECTION ========== */
@@ -1930,5 +2055,4 @@ input[type="range"]::-moz-range-thumb {
 }
 
 
-@media (max-width: 649px) {
-}
+@media (max-width: 649px) {}

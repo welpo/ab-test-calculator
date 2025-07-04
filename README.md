@@ -21,14 +21,14 @@
 
 - **Validated**: Implements standard, peer-reviewed formulas for clinical trial design, validated against established R packages like [`epiR`](https://cran.r-project.org/web/packages/epiR/index.html) (Stevenson & Sergeant, 2025) and [`TrialSize`](https://cran.r-project.org/web/packages/TrialSize/index.html) (Zhang et al., 2024)
 - **Four test types**: superiority (one-tailed), two-tailed, non-inferiority, and equivalence
-- **Duration estimation**: Calculate how long your experiment needs to run
-- **MDE estimation**: Given a number of days, see what effect you could detect
-- **Table with multiple values**: Compare different MDE or duration scenarios to evaluate test sensitivity vs. duration tradeoffs
-- **Multiple variants**: Plan tests with up to 5 variants (A/B/C/D/E) (need more? [open an issue](https://github.com/welpo/ab-test-calculator/issues/new?&labels=feature))
-- **Flexible MDE options**: Calculate for relative (percentage) or absolute (percentage point) improvements
-- **Advanced settings**: Configure significance level, statistical power, test type, multiple testing corrections (Bonferroni & Šidák)
-- **Traffic distribution**: Set custom traffic allocation between variants or automatically optimise the distribution for multi-variant tests
+- **Single prediction**: Get sample size and duration estimates
+- **Effect → Time table**: Enter your minimum detectable effect(s) and see how long your test needs to run
+- **Time → Effect table**: Enter your available time(s) and discover what effects you can detect
 - **Shareable plans**: Generate links to share test plans with colleagues, or download the tables as CSV
+- **Multiple variants**: Plan tests with up to 5 variants (A/B/C/D/E) (need more? [open an issue](https://github.com/welpo/ab-test-calculator/issues/new?&labels=feature))
+- **Visual chart**: Interactive visualisation showing detectable/undetectable zones for each test type
+- **Traffic distribution**: Set custom traffic allocation between variants or automatically optimise the distribution for multi-variant tests
+- **Advanced settings**: Configure significance level, statistical power, test type, multiple testing corrections (Bonferroni & Šidák)
 - **Private**: Works entirely client-side with no data sent to any server
 
 ## Contributing
