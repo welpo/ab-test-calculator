@@ -26,8 +26,8 @@
 - **Table with multiple values**: Compare different MDE or duration scenarios to evaluate test sensitivity vs. duration tradeoffs
 - **Multiple variants**: Plan tests with up to 5 variants (A/B/C/D/E) (need more? [open an issue](https://github.com/welpo/ab-test-calculator/issues/new?&labels=feature))
 - **Flexible MDE options**: Calculate for relative (percentage) or absolute (percentage point) improvements
-- **Advanced settings**: Configure significance level, statistical power, test type, multiple testing corrections…
-- **Traffic distribution**: Set custom traffic allocation between variants
+- **Advanced settings**: Configure significance level, statistical power, test type, multiple testing corrections (Bonferroni & Šidák)
+- **Traffic distribution**: Set custom traffic allocation between variants or automatically optimise the distribution for multi-variant tests
 - **Shareable plans**: Generate links to share test plans with colleagues, or download the tables as CSV
 - **Private**: Works entirely client-side with no data sent to any server
 
@@ -38,17 +38,17 @@ Please do! I'd appreciate bug reports, improvements (however minor), suggestions
 The calculator uses vanilla JavaScript, HTML, and CSS. To run locally:
 
 1. Clone the repository: `git clone https://github.com/welpo/ab-test-calculator.git`
-2. Navigate to the project directory: `cd ab-test-calculator`
+2. Navigate to the app directory: `cd ab-test-calculator/app`
 3. Start a local server: `python3 -m http.server`
 4. Visit `http://localhost:8000` in your browser
 
 The important files are:
 
-- `index.html`: Basic structure
-- `styles.css`: Styles
-- `app.js`: Main logic
-- `statistics.js`: Statistical functions
-- `tests.js`: Tests, generated with scripts in `test_generation/`. Add `?test` to the URL to run the tests
+- `app/index.html`: Basic structure
+- `app/styles.css`: Styles
+- `app/app.js`: Main logic
+- `app/statistics.js`: Statistical functions
+- `app/tests.js`: Tests, generated with scripts in `test_generation/`. Add `?test` to the URL to run the tests
 
 ## Need help?
 
