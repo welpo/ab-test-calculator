@@ -132,8 +132,7 @@ const regressionTestCases = [
   {
     name: "SUP | 50/50 | Small effect",
     baseline: 10.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.2,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -146,8 +145,7 @@ const regressionTestCases = [
   {
     name: "SUP | 50/50 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -160,8 +158,7 @@ const regressionTestCases = [
   {
     name: "SUP | 50/50 | E-commerce",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -174,8 +171,7 @@ const regressionTestCases = [
   {
     name: "SUP | 50/50 | Email",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -188,8 +184,7 @@ const regressionTestCases = [
   {
     name: "SUP | 70/30 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -202,8 +197,7 @@ const regressionTestCases = [
   {
     name: "SUP | 70/30 | Small effect",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -216,8 +210,7 @@ const regressionTestCases = [
   {
     name: "SUP | 70/30 | Sign-up",
     baseline: 12.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 1.7999999999999998,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -230,8 +223,7 @@ const regressionTestCases = [
   {
     name: "SUP | 30/70 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -244,8 +236,7 @@ const regressionTestCases = [
   {
     name: "SUP | 30/70 | Purchase",
     baseline: 45.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 4.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -258,8 +249,7 @@ const regressionTestCases = [
   {
     name: "SUP | 30/70 | Conservative",
     baseline: 8.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -272,8 +262,7 @@ const regressionTestCases = [
   {
     name: "SUP | 80/20 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -286,8 +275,7 @@ const regressionTestCases = [
   {
     name: "SUP | 80/20 | Strict alpha",
     baseline: 10.0,
-    mdeValue: 30.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -300,8 +288,7 @@ const regressionTestCases = [
   {
     name: "SUP | 80/20 | E-commerce",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -314,8 +301,7 @@ const regressionTestCases = [
   {
     name: "SUP | 20/80 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -328,8 +314,7 @@ const regressionTestCases = [
   {
     name: "SUP | 20/80 | Email",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -342,8 +327,7 @@ const regressionTestCases = [
   {
     name: "SUP | 20/80 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -356,8 +340,7 @@ const regressionTestCases = [
   {
     name: "SUP | 90/10 | Small effect",
     baseline: 10.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.2,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -370,8 +353,7 @@ const regressionTestCases = [
   {
     name: "SUP | 90/10 | Small effect variant",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -384,8 +366,7 @@ const regressionTestCases = [
   {
     name: "SUP | 90/10 | Sign-up",
     baseline: 12.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 1.7999999999999998,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -398,8 +379,7 @@ const regressionTestCases = [
   {
     name: "SUP | 10/90 | Purchase",
     baseline: 45.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 4.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -412,8 +392,7 @@ const regressionTestCases = [
   {
     name: "SUP | 10/90 | E-commerce",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -426,8 +405,7 @@ const regressionTestCases = [
   {
     name: "SUP | 10/90 | Conservative",
     baseline: 8.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -440,8 +418,7 @@ const regressionTestCases = [
   {
     name: "SUP | 99/1 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -454,8 +431,7 @@ const regressionTestCases = [
   {
     name: "SUP | 99/1 | Strict alpha",
     baseline: 10.0,
-    mdeValue: 30.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -468,8 +444,7 @@ const regressionTestCases = [
   {
     name: "SUP | 99/1 | Email",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -482,8 +457,7 @@ const regressionTestCases = [
   {
     name: "SUP | 1/99 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -496,8 +470,7 @@ const regressionTestCases = [
   {
     name: "SUP | 1/99 | E-commerce",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -510,8 +483,7 @@ const regressionTestCases = [
   {
     name: "SUP | 1/99 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -527,8 +499,7 @@ const regressionTestCases = [
   {
     name: "TT | 50/50 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -541,8 +512,7 @@ const regressionTestCases = [
   {
     name: "TT | 50/50 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -555,8 +525,7 @@ const regressionTestCases = [
   {
     name: "TT | 50/50 | Small effect",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -569,8 +538,7 @@ const regressionTestCases = [
   {
     name: "TT | 50/50 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -583,8 +551,7 @@ const regressionTestCases = [
   {
     name: "TT | 70/30 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -597,8 +564,7 @@ const regressionTestCases = [
   {
     name: "TT | 70/30 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -611,8 +577,7 @@ const regressionTestCases = [
   {
     name: "TT | 70/30 | Email click rate",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -625,8 +590,7 @@ const regressionTestCases = [
   {
     name: "TT | 30/70 | Strict alpha",
     baseline: 10.0,
-    mdeValue: 30.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -639,8 +603,7 @@ const regressionTestCases = [
   {
     name: "TT | 30/70 | Sign-up rate",
     baseline: 12.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 1.7999999999999998,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -653,8 +616,7 @@ const regressionTestCases = [
   {
     name: "TT | 30/70 | Purchase completion",
     baseline: 45.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 4.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -667,8 +629,7 @@ const regressionTestCases = [
   {
     name: "TT | 80/20 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -681,8 +642,7 @@ const regressionTestCases = [
   {
     name: "TT | 80/20 | Conservative test",
     baseline: 8.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -695,8 +655,7 @@ const regressionTestCases = [
   {
     name: "TT | 80/20 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -709,8 +668,7 @@ const regressionTestCases = [
   {
     name: "TT | 20/80 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -723,8 +681,7 @@ const regressionTestCases = [
   {
     name: "TT | 20/80 | Email click rate",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -737,8 +694,7 @@ const regressionTestCases = [
   {
     name: "TT | 20/80 | Small effect",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -751,8 +707,7 @@ const regressionTestCases = [
   {
     name: "TT | 90/10 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -765,8 +720,7 @@ const regressionTestCases = [
   {
     name: "TT | 90/10 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -779,8 +733,7 @@ const regressionTestCases = [
   {
     name: "TT | 90/10 | Sign-up rate",
     baseline: 12.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 1.7999999999999998,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -793,8 +746,7 @@ const regressionTestCases = [
   {
     name: "TT | 10/90 | Purchase completion",
     baseline: 45.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 4.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -807,8 +759,7 @@ const regressionTestCases = [
   {
     name: "TT | 10/90 | Strict alpha",
     baseline: 10.0,
-    mdeValue: 30.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -821,8 +772,7 @@ const regressionTestCases = [
   {
     name: "TT | 10/90 | Conservative test",
     baseline: 8.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -835,8 +785,7 @@ const regressionTestCases = [
   {
     name: "TT | 99/1 | Basic",
     baseline: 10.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -849,8 +798,7 @@ const regressionTestCases = [
   {
     name: "TT | 99/1 | High power",
     baseline: 5.0,
-    mdeValue: 40.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -863,8 +811,7 @@ const regressionTestCases = [
   {
     name: "TT | 99/1 | Email click rate",
     baseline: 25.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 5.0,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -877,8 +824,7 @@ const regressionTestCases = [
   {
     name: "TT | 1/99 | Large effect",
     baseline: 15.0,
-    mdeValue: 50.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -891,8 +837,7 @@ const regressionTestCases = [
   {
     name: "TT | 1/99 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 33.0,
-    isRelativeMde: true,
+    absoluteMde: 0.99,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -905,8 +850,7 @@ const regressionTestCases = [
   {
     name: "TT | 1/99 | Small effect",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -922,8 +866,7 @@ const regressionTestCases = [
   {
     name: "EQ | 50/50 | Basic",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -936,8 +879,7 @@ const regressionTestCases = [
   {
     name: "EQ | 50/50 | Tight margin",
     baseline: 15.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.44999999999999996,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -950,8 +892,7 @@ const regressionTestCases = [
   {
     name: "EQ | 50/50 | Wide margin",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -964,8 +905,7 @@ const regressionTestCases = [
   {
     name: "EQ | 50/50 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.06,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -978,8 +918,7 @@ const regressionTestCases = [
   {
     name: "EQ | 70/30 | Basic",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -992,8 +931,7 @@ const regressionTestCases = [
   {
     name: "EQ | 70/30 | High power",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -1006,8 +944,7 @@ const regressionTestCases = [
   {
     name: "EQ | 70/30 | Email open rate",
     baseline: 25.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1020,8 +957,7 @@ const regressionTestCases = [
   {
     name: "EQ | 30/70 | Wide margin",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1034,8 +970,7 @@ const regressionTestCases = [
   {
     name: "EQ | 30/70 | Click-through rate",
     baseline: 8.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 0.32,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1048,8 +983,7 @@ const regressionTestCases = [
   {
     name: "EQ | 30/70 | Sign-up conversion",
     baseline: 18.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.54,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1062,8 +996,7 @@ const regressionTestCases = [
   {
     name: "EQ | 80/20 | Basic",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1076,8 +1009,7 @@ const regressionTestCases = [
   {
     name: "EQ | 80/20 | Strict alpha",
     baseline: 12.0,
-    mdeValue: 6.0,
-    isRelativeMde: true,
+    absoluteMde: 0.72,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -1090,8 +1022,7 @@ const regressionTestCases = [
   {
     name: "EQ | 80/20 | Purchase completion",
     baseline: 45.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 2.25,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1104,8 +1035,7 @@ const regressionTestCases = [
   {
     name: "EQ | 20/80 | Tight margin",
     baseline: 15.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.44999999999999996,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1118,8 +1048,7 @@ const regressionTestCases = [
   {
     name: "EQ | 20/80 | Email open rate",
     baseline: 25.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1132,8 +1061,7 @@ const regressionTestCases = [
   {
     name: "EQ | 20/80 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.06,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1146,8 +1074,7 @@ const regressionTestCases = [
   {
     name: "EQ | 90/10 | Basic",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1160,8 +1087,7 @@ const regressionTestCases = [
   {
     name: "EQ | 90/10 | Wide margin",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1174,8 +1100,7 @@ const regressionTestCases = [
   {
     name: "EQ | 90/10 | High power",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -1188,8 +1113,7 @@ const regressionTestCases = [
   {
     name: "EQ | 10/90 | Click-through rate",
     baseline: 8.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 0.32,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1202,8 +1126,7 @@ const regressionTestCases = [
   {
     name: "EQ | 10/90 | Sign-up conversion",
     baseline: 18.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.54,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1216,8 +1139,7 @@ const regressionTestCases = [
   {
     name: "EQ | 10/90 | Purchase completion",
     baseline: 45.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 2.25,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1230,8 +1152,7 @@ const regressionTestCases = [
   {
     name: "EQ | 99/1 | Basic",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1244,8 +1165,7 @@ const regressionTestCases = [
   {
     name: "EQ | 99/1 | Strict alpha",
     baseline: 12.0,
-    mdeValue: 6.0,
-    isRelativeMde: true,
+    absoluteMde: 0.72,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -1258,8 +1178,7 @@ const regressionTestCases = [
   {
     name: "EQ | 99/1 | Tight margin",
     baseline: 15.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.44999999999999996,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1272,8 +1191,7 @@ const regressionTestCases = [
   {
     name: "EQ | 1/99 | Wide margin",
     baseline: 20.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1286,8 +1204,7 @@ const regressionTestCases = [
   {
     name: "EQ | 1/99 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.06,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1300,8 +1217,7 @@ const regressionTestCases = [
   {
     name: "EQ | 1/99 | Email open rate",
     baseline: 25.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1317,8 +1233,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1331,8 +1246,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -1345,8 +1259,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.30000000000000004,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1359,8 +1272,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1373,8 +1285,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1387,8 +1298,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | High baseline, tight margin",
     baseline: 30.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1401,8 +1311,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | Click-through rate",
     baseline: 8.0,
-    mdeValue: 12.5,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.85,
     variantCount: 2,
@@ -1415,8 +1324,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Medium baseline, medium margin",
     baseline: 15.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1429,8 +1337,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Sign-up conversion",
     baseline: 18.0,
-    mdeValue: 6.0,
-    isRelativeMde: true,
+    absoluteMde: 1.08,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1443,8 +1350,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Low baseline, loose margin",
     baseline: 2.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.4,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1457,8 +1363,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1471,8 +1376,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | High power, tight margin",
     baseline: 20.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -1485,8 +1389,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.30000000000000004,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1499,8 +1402,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -1513,8 +1415,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1527,8 +1428,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Medium baseline, medium margin",
     baseline: 15.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1541,8 +1441,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1555,8 +1454,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | High baseline, tight margin",
     baseline: 30.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1569,8 +1467,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | Click-through rate",
     baseline: 8.0,
-    mdeValue: 12.5,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.85,
     variantCount: 2,
@@ -1583,8 +1480,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | Sign-up conversion",
     baseline: 18.0,
-    mdeValue: 6.0,
-    isRelativeMde: true,
+    absoluteMde: 1.08,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1597,8 +1493,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.30000000000000004,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1611,8 +1506,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | Low baseline, loose margin",
     baseline: 2.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.4,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1625,8 +1519,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1639,8 +1532,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | High power, tight margin",
     baseline: 20.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.025,
     power: 0.95,
     variantCount: 2,
@@ -1653,8 +1545,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1667,8 +1558,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -1681,8 +1571,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | E-commerce conversion",
     baseline: 3.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.30000000000000004,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1695,8 +1584,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | High baseline, tight margin",
     baseline: 30.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1712,8 +1600,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1726,8 +1613,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -1740,8 +1626,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | E-commerce",
     baseline: 3.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.6000000000000001,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1754,8 +1639,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1768,8 +1652,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1782,8 +1665,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | Tight margin",
     baseline: 20.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.4,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1796,8 +1678,7 @@ const regressionTestCases = [
   {
     name: "NI | 70/30 | Click rate",
     baseline: 8.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.8,
     alpha: 0.025,
     power: 0.85,
     variantCount: 2,
@@ -1810,8 +1691,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Loose margin",
     baseline: 15.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 2.25,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1824,8 +1704,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Purchase rate",
     baseline: 45.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 1.3499999999999999,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1838,8 +1717,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | High power",
     baseline: 30.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.95,
     variantCount: 2,
@@ -1852,8 +1730,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1866,8 +1743,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | Strict alpha",
     baseline: 12.0,
-    mdeValue: 8.0,
-    isRelativeMde: true,
+    absoluteMde: 0.96,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -1880,8 +1756,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | E-commerce",
     baseline: 3.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.6000000000000001,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1894,8 +1769,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -1908,8 +1782,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1922,8 +1795,7 @@ const regressionTestCases = [
   {
     name: "NI | 20/80 | Loose margin",
     baseline: 15.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 2.25,
     alpha: 0.05,
     power: 0.85,
     variantCount: 2,
@@ -1936,8 +1808,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1950,8 +1821,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | Tight margin",
     baseline: 20.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.4,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1964,8 +1834,7 @@ const regressionTestCases = [
   {
     name: "NI | 90/10 | Click rate",
     baseline: 8.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.8,
     alpha: 0.025,
     power: 0.85,
     variantCount: 2,
@@ -1978,8 +1847,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | Purchase rate",
     baseline: 45.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 1.3499999999999999,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1992,8 +1860,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | E-commerce",
     baseline: 3.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.6000000000000001,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -2006,8 +1873,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | High power",
     baseline: 30.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.5,
     alpha: 0.05,
     power: 0.95,
     variantCount: 2,
@@ -2020,8 +1886,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | Basic",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -2034,8 +1899,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | Strict alpha",
     baseline: 12.0,
-    mdeValue: 8.0,
-    isRelativeMde: true,
+    absoluteMde: 0.96,
     alpha: 0.01,
     power: 0.8,
     variantCount: 2,
@@ -2048,8 +1912,7 @@ const regressionTestCases = [
   {
     name: "NI | 99/1 | Email open rate",
     baseline: 25.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -2062,8 +1925,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | Conservative",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.25,
     alpha: 0.025,
     power: 0.9,
     variantCount: 2,
@@ -2076,8 +1938,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | E-commerce",
     baseline: 3.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 0.6000000000000001,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -2090,8 +1951,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | Tight margin",
     baseline: 20.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 0.4,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -2109,8 +1969,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Standard Two-Tailed A/B",
     baseline: 5.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2120,8 +1979,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Absolute MDE",
     baseline: 2.5,
-    mdeValue: 0.5,
-    isRelativeMde: false,
+    absoluteMde: 0.5,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2131,8 +1989,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Superiority Test",
     baseline: 20.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     testType: "superiority",
     alpha: 0.05,
     power: 0.95,
@@ -2142,8 +1999,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Equivalence with Bonferroni",
     baseline: 10.0,
-    mdeValue: 1.5,
-    isRelativeMde: false,
+    absoluteMde: 1.5,
     testType: "equivalence",
     alpha: 0.05,
     power: 0.8,
@@ -2154,8 +2010,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Non-Inferiority with Sidak",
     baseline: 15.0,
-    mdeValue: 4.0,
-    isRelativeMde: true,
+    absoluteMde: 0.6,
     testType: "non-inferiority",
     alpha: 0.05,
     power: 0.8,
@@ -2166,8 +2021,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 5-Way Even Split",
     baseline: 12.0,
-    mdeValue: 8.0,
-    isRelativeMde: true,
+    absoluteMde: 0.96,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2178,8 +2032,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 10-Way with Bonferroni",
     baseline: 8.0,
-    mdeValue: 12.0,
-    isRelativeMde: true,
+    absoluteMde: 0.96,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2190,8 +2043,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 50% Baseline (Maximum Variance)",
     baseline: 50.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 2.5,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2201,8 +2053,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Ultra-Tiny Baseline",
     baseline: 0.001,
-    mdeValue: 500.0,
-    isRelativeMde: true,
+    absoluteMde: 0.005,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2212,8 +2063,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Microscopic Absolute MDE",
     baseline: 5.0,
-    mdeValue: 0.0001,
-    isRelativeMde: false,
+    absoluteMde: 0.0001,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2223,8 +2073,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Heavy Control (70/15/15)",
     baseline: 15.0,
-    mdeValue: 8.0,
-    isRelativeMde: true,
+    absoluteMde: 1.2,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2234,8 +2083,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Alpha = Power",
     baseline: 10.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     testType: "two-tailed",
     alpha: 0.8,
     power: 0.8,
@@ -2245,8 +2093,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Mobile Conversion (Low)",
     baseline: 0.7,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 0.105,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2256,8 +2103,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Newsletter Signup (High)",
     baseline: 87.5,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 1.75,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2267,8 +2113,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Everything Extreme",
     baseline: 0.0123,
-    mdeValue: 456.789,
-    isRelativeMde: true,
+    absoluteMde: 0.056185047,
     testType: "equivalence",
     alpha: 0.001,
     power: 0.999,
@@ -2279,8 +2124,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Tiny Control, Large Variant (10/90)",
     baseline: 20.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2290,8 +2134,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 3-Way Split (34/33/33)",
     baseline: 5.0,
-    mdeValue: 10.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2301,8 +2144,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Uneven with Multiple Weak Links (80/10/5/5)",
     baseline: 8.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 2.0,
     testType: "two-tailed",
     correctionMethod: "bonferroni",
     alpha: 0.05,
@@ -2313,8 +2155,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 95/5 Split",
     baseline: 30.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 6.0,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2324,8 +2165,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Non-Inferiority with Uneven Split",
     baseline: 50.0,
-    mdeValue: 2.0,
-    isRelativeMde: true,
+    absoluteMde: 1.0,
     testType: "non-inferiority",
     alpha: 0.05,
     power: 0.9,
@@ -2335,8 +2175,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Equivalence with Uneven Multi-Variant",
     baseline: 15.0,
-    mdeValue: 0.5,
-    isRelativeMde: false,
+    absoluteMde: 0.5,
     testType: "equivalence",
     correctionMethod: "sidak",
     alpha: 0.05,
@@ -2347,8 +2186,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: MDE pushes Target to 100%",
     baseline: 80.0,
-    mdeValue: 25.0,
-    isRelativeMde: true,
+    absoluteMde: 20.0,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2358,8 +2196,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: MDE pushes Target to 0%",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: false,
+    absoluteMde: 5.0,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2369,8 +2206,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Near-Perfect Baseline (99.999%)",
     baseline: 99.999,
-    mdeValue: 0.001,
-    isRelativeMde: true,
+    absoluteMde: 0.00099999,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2380,8 +2216,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Ultra-High Power + Strict Alpha",
     baseline: 10.0,
-    mdeValue: 5.0,
-    isRelativeMde: true,
+    absoluteMde: 0.5,
     testType: "two-tailed",
     alpha: 0.001,
     power: 0.999,
@@ -2391,8 +2226,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Relaxed Power + Loose Alpha",
     baseline: 15.0,
-    mdeValue: 20.0,
-    isRelativeMde: true,
+    absoluteMde: 3.0,
     testType: "superiority",
     alpha: 0.2,
     power: 0.5,
@@ -2402,8 +2236,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 50% Baseline + Huge Relative MDE",
     baseline: 50.0, // Maximum variance point
-    mdeValue: 100.0, // 100% relative increase (50% → 100%)
-    isRelativeMde: true,
+    absoluteMde: 50.0,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2413,8 +2246,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Baseline = MDE (Doubling)",
     baseline: 5.0,
-    mdeValue: 5.0,
-    isRelativeMde: false,
+    absoluteMde: 5.0,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2424,8 +2256,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: 20-Way Split",
     baseline: 8.0,
-    mdeValue: 15.0,
-    isRelativeMde: true,
+    absoluteMde: 1.2,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2436,8 +2267,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Tiny Variants in Large Test",
     baseline: 15.0,
-    mdeValue: 12.0,
-    isRelativeMde: true,
+    absoluteMde: 1.7999999999999998,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2448,8 +2278,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Non-Inferiority + Uneven + High Variants",
     baseline: 25.0,
-    mdeValue: 3.0,
-    isRelativeMde: true,
+    absoluteMde: 0.75,
     testType: "non-inferiority",
     alpha: 0.05,
     power: 0.9,
@@ -2460,8 +2289,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Equivalence + Extreme Distribution",
     baseline: 35.0,
-    mdeValue: 1.0,
-    isRelativeMde: false,
+    absoluteMde: 1.0,
     testType: "equivalence",
     alpha: 0.01,
     power: 0.95,
@@ -2472,8 +2300,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: Non-Terminating Decimals",
     baseline: 10.0/3.0, // 3.333...%
-    mdeValue: 1.0/3.0, // 0.333...%
-    isRelativeMde: false,
+    absoluteMde: 1.0/3.0,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
@@ -2483,8 +2310,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: π and e in the Mix",
     baseline: Math.PI,
-    mdeValue: Math.E,
-    isRelativeMde: false,
+    absoluteMde: Math.E,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2494,8 +2320,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: The Baseline Destroyer",
     baseline: 99.9999,
-    mdeValue: 0.0001,
-    isRelativeMde: true,
+    absoluteMde: 9.99999e-05,
     testType: "non-inferiority",
     alpha: 0.05,
     power: 0.8,
@@ -2506,8 +2331,7 @@ const symmetryTestCases = [
   {
     name: "Symmetry: MDE = Baseline (100% Relative)",
     baseline: 7.5,
-    mdeValue: 100.0,
-    isRelativeMde: true,
+    absoluteMde: 7.5,
     testType: "superiority",
     alpha: 0.05,
     power: 0.8,
@@ -2522,8 +2346,7 @@ async function runDirectTest(testCase) {
   try {
     const config = {
       baseline: testCase.baseline / 100,
-      mdeValue: testCase.mdeValue,
-      isRelativeMde: testCase.isRelativeMde,
+      absoluteMde: testCase.absoluteMde,
       alpha: testCase.alpha,
       power: testCase.power,
       testType: testCase.testType,
@@ -2579,8 +2402,7 @@ async function runSymmetryTest(testCase) {
   try {
     const experimentConfig = {
       baseline: testCase.baseline / 100,
-      mdeValue: testCase.mdeValue,
-      isRelativeMde: testCase.isRelativeMde,
+      absoluteMde: testCase.absoluteMde,
       alpha: testCase.alpha,
       power: testCase.power,
       variantCount: testCase.variantCount,
@@ -2600,9 +2422,9 @@ async function runSymmetryTest(testCase) {
       { ...testCase, buffer: 0 }
     );
 
-    if (areClose(testCase.mdeValue, recoveredMde)) {
+    if (areClose(testCase.absoluteMde, recoveredMde)) {
       debugLog(
-        `Test passed - Original MDE: ${testCase.mdeValue.toFixed(
+        `Test passed - Original MDE: ${testCase.absoluteMde.toFixed(
           2
         )}%, Recovered: ${recoveredMde.toFixed(2)}%`,
         "pass"
@@ -2610,7 +2432,7 @@ async function runSymmetryTest(testCase) {
       passedTests++;
     } else {
       debugLog(
-        `Test failed - Original MDE: ${testCase.mdeValue.toFixed(
+        `Test failed - Original MDE: ${testCase.absoluteMde.toFixed(
           2
         )}%, Recovered: ${recoveredMde.toFixed(2)}%`,
         "fail"

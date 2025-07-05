@@ -67,6 +67,8 @@ const calculatorState = {
   mde: DEFAULT_MDE,
   /** True if MDE is relative (%), false if absolute (points). */
   isRelativeMde: true,
+  /** Computed absolute MDE value in points. */
+  absoluteMde: 0,
   /** Total number of variants in the test, including control. */
   variants: 2,
 
@@ -527,6 +529,7 @@ function debounce(func, delay) {
 }
 
 function runUpdateCycle() {
+  calculatorState.absoluteMde = computeAbsoluteMde(calculatorState);
   const errors = validateInputs(calculatorState);
   const results =
     !errors || errors.length === 0
@@ -534,6 +537,11 @@ function runUpdateCycle() {
       : null;
   render(calculatorState, results, errors);
 }
+
+function computeAbsoluteMde(state) {
+  return state.isRelativeMde ? state.baseline * (state.mde / 100) : state.mde;
+}
+
 
 function validateInputs(state) {
   const basicErrors = getBasicInputErrors(state);
@@ -619,9 +627,9 @@ function getMdeErrors(state) {
   }
 }
 
-function getSuperiorityMdeErrors(state, mdeLabel) {
-  const { mde, baseline, isRelativeMde } = state;
-  const targetRate = calculateTargetRate(baseline, mde, isRelativeMde);
+function getSuperiorityMdeErrors(state) {
+  const { mde, baseline, absoluteMde } = state;
+  const targetRate = calculateTargetRate(baseline, absoluteMde);
   if (mde > 0 && targetRate >= 100) {
     return [
       {
@@ -646,14 +654,14 @@ function getSuperiorityMdeErrors(state, mdeLabel) {
 }
 
 function getTwoTailedMdeErrors(state, mdeLabel) {
-  const { mde, baseline, isRelativeMde } = state;
+  const { mde, baseline, absoluteMde } = state;
   const errors = [];
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
-  const upperBound = calculateTargetRate(baseline, mde, isRelativeMde);
+  const upperBound = calculateTargetRate(baseline, absoluteMde);
   if (upperBound >= 100) {
     errors.push({
       key: "mde",
@@ -662,7 +670,7 @@ function getTwoTailedMdeErrors(state, mdeLabel) {
       )}%`,
     });
   }
-  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  const lowerBound = calculateTargetRate(baseline, -absoluteMde);
   if (lowerBound <= 0) {
     errors.push({
       key: "mde",
@@ -675,13 +683,13 @@ function getTwoTailedMdeErrors(state, mdeLabel) {
 }
 
 function getNonInferiorityMdeErrors(state, mdeLabel) {
-  const { mde, baseline, isRelativeMde } = state;
+  const { mde, baseline, absoluteMde } = state;
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
-  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  const lowerBound = calculateTargetRate(baseline, -absoluteMde);
   if (lowerBound <= 0) {
     return [
       {
@@ -696,14 +704,14 @@ function getNonInferiorityMdeErrors(state, mdeLabel) {
 }
 
 function getEquivalenceMdeErrors(state, mdeLabel) {
-  const { mde, baseline, isRelativeMde } = state;
+  const { mde, baseline, absoluteMde } = state;
   const errors = [];
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
-  const upperBound = calculateTargetRate(baseline, mde, isRelativeMde);
+  const upperBound = calculateTargetRate(baseline, absoluteMde);
   if (upperBound >= 100) {
     errors.push({
       key: "mde",
@@ -712,7 +720,7 @@ function getEquivalenceMdeErrors(state, mdeLabel) {
       )}%`,
     });
   }
-  const lowerBound = calculateTargetRate(baseline, -mde, isRelativeMde);
+  const lowerBound = calculateTargetRate(baseline, -absoluteMde);
   if (lowerBound <= 0) {
     errors.push({
       key: "mde",
@@ -724,8 +732,8 @@ function getEquivalenceMdeErrors(state, mdeLabel) {
   return errors;
 }
 
-function calculateTargetRate(baseline, mde, isRelativeMde) {
-  return isRelativeMde ? baseline * (1 + mde / 100) : baseline + mde;
+function calculateTargetRate(baseline, effectValue) {
+  return baseline + effectValue;
 }
 
 function calculateResultsForActiveTab(state) {
@@ -762,16 +770,15 @@ function calculateResultsForActiveTab(state) {
 }
 
 function getSampleSizeAndDurationForMde(mdeValue, state) {
+  const absoluteMde = state.isRelativeMde ? state.baseline * (mdeValue / 100) : mdeValue;
   const mdeInfo = calculateMDE(
     state.baseline,
-    mdeValue,
-    state.isRelativeMde,
+    absoluteMde,
     state.testType
   );
   const experimentSize = calculateExperimentSize({
     baseline: state.baseline / 100,
-    mdeValue: mdeValue,
-    isRelativeMde: state.isRelativeMde,
+    absoluteMde: absoluteMde,
     alpha: state.alpha,
     power: state.power,
     variantCount: state.variants,
@@ -812,21 +819,21 @@ function calculateTimeRowResult(days, state) {
     variantCount: state.variants,
     buffer: state.buffer,
     testType: state.testType,
-    isRelativeMde: state.isRelativeMde,
     correctionMethod: state.correctionMethod,
     trafficDistribution: getTrafficDistributionAsDecimals(state),
   });
+  const absoluteMde = mde;
+  const displayMde = state.isRelativeMde ? (mde / state.baseline) * 100 : mde;
   const mdeInfo = calculateMDE(
     state.baseline,
-    mde,
-    state.isRelativeMde,
+    absoluteMde,
     state.testType
   );
   const targetRate = mdeInfo.targetRate * 100;
   return {
     baseline: state.baseline,
     targetRate,
-    mde,
+    mde: displayMde,
     isRelative: state.isRelativeMde,
     totalSampleSize,
   };
@@ -889,12 +896,10 @@ function renderDynamicText(state) {
   // Update the tooltips for the relative/absolute mode selectors.
   const relativeTooltipText = `'${state.mde}%' means going from ${
     state.baseline
-  }% to ${(state.baseline * (1 + state.mde / 100)).toFixed(
-    2
-  )}% conversion rate`;
+  }% to ${(state.baseline + state.absoluteMde).toFixed(2)}% conversion rate`;
   const absoluteTooltipText = `'${state.mde} points' means going from ${
     state.baseline
-  }% to ${(state.baseline + state.mde).toFixed(2)}% conversion rate`;
+  }% to ${(state.baseline + state.absoluteMde).toFixed(2)}% conversion rate`;
   document.querySelector(
     'label[for="relativeMode"] .tooltip, #relativeMode ~ .tooltip-trigger .tooltip'
   ).textContent = relativeTooltipText;
@@ -964,7 +969,11 @@ function renderSingleEstimateResults(state, results, errors) {
       sampleSubtitleElem.classList.add("hidden");
     }
     timeEstimateElem.textContent = formatTimeEstimate(results.duration);
-    explanationElem.innerHTML = getTestTypeExplanation(state, results);
+    explanationElem.innerHTML = getTestTypeExplanation(
+      state,
+      results,
+      state.absoluteMde
+    );
     updateChartVisualization(state);
   } else {
     durationValueElem.textContent = "—";
@@ -1354,18 +1363,17 @@ function addDeleteButton(cell, index) {
   cell.appendChild(deleteBtn);
 }
 
-function getTestTypeExplanation(state, results) {
-  const { testType, isRelativeMde, mde, baseline, variants = 2 } = state;
+function getTestTypeExplanation(state, results, effectValue) {
+  const { testType, baseline, variants = 2 } = state;
   const { duration, totalSampleSize } = results;
   const timeText = `<span class="highlight">${formatTimeEstimate(
     duration
   )}</span>`;
   const totalSampleText = `<span class="highlight">${totalSampleSize.toLocaleString()} participants</span>`;
-  const effectSizeInPoints = isRelativeMde ? baseline * (mde / 100) : mde;
-  const marginInPoints = Math.abs(effectSizeInPoints);
+  const marginInPoints = Math.abs(effectValue);
   const bounds = {
     from: `<span class="highlight">${baseline.toFixed(2)}%</span>`,
-    to: `<span class="highlight">${(baseline + effectSizeInPoints).toFixed(
+    to: `<span class="highlight">${(baseline + effectValue).toFixed(
       2
     )}%</span>`,
     upper: `<span class="highlight">${(baseline + marginInPoints).toFixed(
@@ -1384,7 +1392,11 @@ function getTestTypeExplanation(state, results) {
       outcome = `reliably detect an <span class="text-green">improvement from ${bounds.from} to ${bounds.to}</span>`;
       break;
     case "non-inferiority":
-      outcome = `prove ${nonInferioritySubject} ${variants > 2 ? "are" : "is"} <span class="text-green">not meaningfully worse (by staying above ${bounds.lower})</span>`;
+      outcome = `prove ${nonInferioritySubject} ${
+        variants > 2 ? "are" : "is"
+      } <span class="text-green">not meaningfully worse (by staying above ${
+        bounds.lower
+      })</span>`;
       break;
     case "two-tailed":
       outcome = `reliably detect a <span class="text-green">change from ${bounds.from} to ${bounds.upper} or ${bounds.lower}</span>`;
@@ -1399,8 +1411,7 @@ function getTestTypeExplanation(state, results) {
   return `Will ${outcome} with ${totalSampleText} over ${timeText}.`;
 }
 
-function calculateBoundaries(baseline, effect, isRelative, testType) {
-  const effectValue = isRelative ? baseline * (effect / 100) : effect;
+function calculateBoundaries(baseline, effectValue, testType) {
   switch (testType) {
     case "superiority":
       return { lower: null, upper: baseline + effectValue };
@@ -1424,10 +1435,8 @@ function roundToNice(value) {
   return Math.ceil(value / 10) * 10;
 }
 
-function calculateOptimalScale(baseline, boundaries) {
-  const criticalPoints = [baseline];
-  if (boundaries.lower !== null) criticalPoints.push(boundaries.lower);
-  if (boundaries.upper !== null) criticalPoints.push(boundaries.upper);
+function calculateOptimalScale(baseline, effectValue) {
+  const criticalPoints = [baseline - effectValue, baseline + effectValue];
   const minCritical = Math.min(...criticalPoints);
   const maxCritical = Math.max(...criticalPoints);
   const minRange = Math.max(baseline * 0.5, 1);
@@ -1441,7 +1450,10 @@ function calculateOptimalScale(baseline, boundaries) {
     minBound = Math.max(0, center - halfRange);
     maxBound = center + halfRange;
   }
-  return { min: roundToNice(minBound), max: Math.min(100, roundToNice(maxBound)) };
+  return {
+    min: roundToNice(minBound),
+    max: Math.min(100, roundToNice(maxBound)),
+  };
 }
 
 function formatBoundaryValue(value) {
@@ -1451,8 +1463,17 @@ function formatBoundaryValue(value) {
 }
 
 function generateLabels(min, max, boundaries, testType, count = 6) {
-  const shouldShowLeftExtension = (testType === "two-tailed" || testType === "superiority-negative") && boundaries.lower !== null && min > 0.01;
-  const shouldShowRightExtension = ((testType === "superiority" || testType === "two-tailed") && boundaries.upper !== null && max < 99.99) || (testType === "non-inferiority" && boundaries.lower !== null && max < 99.99);
+  const shouldShowLeftExtension =
+    (testType === "two-tailed" || testType === "superiority-negative") &&
+    boundaries.lower !== null &&
+    min > 0.01;
+  const shouldShowRightExtension =
+    ((testType === "superiority" || testType === "two-tailed") &&
+      boundaries.upper !== null &&
+      max < 99.99) ||
+    (testType === "non-inferiority" &&
+      boundaries.lower !== null &&
+      max < 99.99);
   const labels = [];
   for (let i = 0; i < count; i++) {
     const value = min + (max - min) * (i / (count - 1));
@@ -1574,14 +1595,9 @@ function updateLegendLabels(testType) {
 }
 
 function updateChartVisualization(state) {
-  const { testType, baseline, mde, isRelativeMde } = state;
-  const boundaries = calculateBoundaries(
-    baseline,
-    mde,
-    isRelativeMde,
-    testType
-  );
-  const scale = calculateOptimalScale(baseline, boundaries);
+  const { testType, baseline, absoluteMde } = state;
+  const boundaries = calculateBoundaries(baseline, absoluteMde, testType);
+  const scale = calculateOptimalScale(baseline, absoluteMde);
   updateChart(baseline, boundaries, scale, testType);
   updateLegendLabels(testType);
 }

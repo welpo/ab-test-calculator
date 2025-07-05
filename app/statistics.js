@@ -13,14 +13,11 @@ export function getOptimalSplit(numberOfVariants) {
   return [controlPoints, ...allocations];
 }
 
-export function calculateMDE(baseline, mdeValue, isRelativeMde, testType) {
+export function calculateMDE(baseline, absoluteMde, testType) {
   const baselineRate = baseline / 100;
-  const mdeDecimal = mdeValue / 100;
+  const absoluteEffectSize = absoluteMde / 100;
   // For non-inferiority, the direction is negative (a decrease), but entered as a positive number.
   const direction = testType === "non-inferiority" ? -1 : 1;
-  const absoluteEffectSize = isRelativeMde
-    ? baselineRate * mdeDecimal
-    : mdeDecimal;
   const targetRate = baselineRate + direction * absoluteEffectSize;
   let relMDE;
   if (baselineRate > 0) {
@@ -121,20 +118,16 @@ function applyBufferToResults(unbufferedResults, buffer) {
 function getStatisticalParams(config) {
   const {
     baseline,
-    mdeValue,
-    isRelativeMde,
+    absoluteMde,
     alpha,
     power,
     variantCount,
     testType,
     correctionMethod,
   } = config;
-  const mdeDecimal = mdeValue / 100;
   // For non-inferiority, the margin is a negative change, but the user enters a positive number.
-  const direction = testType === "non-inferiority" ? -1 : Math.sign(mdeValue);
-  const absoluteEffectSize = isRelativeMde
-    ? baseline * mdeDecimal
-    : direction * mdeDecimal;
+  const direction = testType === "non-inferiority" ? -1 : Math.sign(absoluteMde);
+  const absoluteEffectSize = direction * (absoluteMde / 100);
   const treatmentCR = baseline + absoluteEffectSize;
   const adjustedAlpha = adjustAlphaForMultipleComparisons(
     alpha,
@@ -279,7 +272,6 @@ export function calculateMDEFromSampleSize(
     power = 0.8,
     buffer = 0,
     testType = "superiority",
-    isRelativeMde = true,
     correctionMethod = "none",
     trafficDistribution,
   } = config;
@@ -316,11 +308,7 @@ export function calculateMDEFromSampleSize(
   if (mde_proportion === null || isNaN(mde_proportion)) {
     return NaN;
   }
-  if (isRelativeMde) {
-    return baselineRate > 0 ? (mde_proportion / baselineRate) * 100 : Infinity;
-  } else {
-    return mde_proportion * 100;
-  }
+  return mde_proportion * 100;
 }
 
 function solveQuadratic(a, b, c) {
