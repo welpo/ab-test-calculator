@@ -1700,17 +1700,31 @@ function formatTimeEstimate(days) {
       }`;
     }
     return timeEstimateText;
-  } else {
+  } else if (days < 365) {
     const months = Math.floor(days / 30);
-    const remainingDays = days % 30;
+    const remainingDaysAfterMonths = days % 30;
     let timeEstimateText = `${months} month${months !== 1 ? "s" : ""}`;
-    if (remainingDays > 0) {
-      const weeks = Math.floor(remainingDays / 7);
-      const days = remainingDays % 7;
+    if (remainingDaysAfterMonths > 0) {
+      const weeks = Math.floor(remainingDaysAfterMonths / 7);
+      const remainingDays = remainingDaysAfterMonths % 7;
       if (weeks > 0) {
         timeEstimateText += ` and ${weeks} week${weeks !== 1 ? "s" : ""}`;
-      } else if (days > 0) {
-        timeEstimateText += ` and ${days} day${days !== 1 ? "s" : ""}`;
+      }
+      if (remainingDays > 0) {
+        timeEstimateText += ` and ${remainingDays} day${
+          remainingDays !== 1 ? "s" : ""
+        }`;
+      }
+    }
+    return timeEstimateText;
+  } else {
+    const years = Math.floor(days / 365);
+    const remainingDaysAfterYears = days % 365;
+    let timeEstimateText = `${years} year${years !== 1 ? "s" : ""}`;
+    if (remainingDaysAfterYears > 0) {
+      const months = Math.floor(remainingDaysAfterYears / 30);
+      if (months > 0) {
+        timeEstimateText += ` and ${months} month${months !== 1 ? "s" : ""}`;
       }
     }
     return timeEstimateText;
