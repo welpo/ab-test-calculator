@@ -128,7 +128,7 @@ function debugLog(message, type = "info") {
 }
 
 const regressionTestCases = [
-  // Start of tests generated from TrialSize::TwoSampleProportion.NIS (margin=0) on 2025-06-24
+  // Start of tests generated from TrialSize::TwoSampleProportion.NIS (margin=0) on 2025-07-06
   {
     name: "SUP | 50/50 | Small effect",
     baseline: 10.0,
@@ -210,7 +210,7 @@ const regressionTestCases = [
   {
     name: "SUP | 70/30 | Sign-up",
     baseline: 12.0,
-    absoluteMde: 1.7999999999999998,
+    absoluteMde: 1.8,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -366,7 +366,7 @@ const regressionTestCases = [
   {
     name: "SUP | 90/10 | Sign-up",
     baseline: 12.0,
-    absoluteMde: 1.7999999999999998,
+    absoluteMde: 1.8,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -493,9 +493,9 @@ const regressionTestCases = [
     trafficDistribution: [0.01, 0.99],
     expected: { total: 14209, perGroup: [143, 14066] },
   },
-  // End of tests generated from TrialSize::TwoSampleProportion.NIS (margin=0) on 2025-06-24
+  // End of tests generated from TrialSize::TwoSampleProportion.NIS (margin=0) on 2025-07-06
 
-  // Start of tests generated from TrialSize::TwoSampleProportion.Equality on 2025-06-24
+  // Start of tests generated from TrialSize::TwoSampleProportion.Equality on 2025-07-06
   {
     name: "TT | 50/50 | Basic",
     baseline: 10.0,
@@ -603,7 +603,7 @@ const regressionTestCases = [
   {
     name: "TT | 30/70 | Sign-up rate",
     baseline: 12.0,
-    absoluteMde: 1.7999999999999998,
+    absoluteMde: 1.8,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -733,7 +733,7 @@ const regressionTestCases = [
   {
     name: "TT | 90/10 | Sign-up rate",
     baseline: 12.0,
-    absoluteMde: 1.7999999999999998,
+    absoluteMde: 1.8,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -860,9 +860,9 @@ const regressionTestCases = [
     trafficDistribution: [0.01, 0.99],
     expected: { total: 317357, perGroup: [3174, 314183] },
   },
-  // End of tests generated from TrialSize::TwoSampleProportion.Equality on 2025-06-24
+  // End of tests generated from TrialSize::TwoSampleProportion.Equality on 2025-07-06
 
-  // Start of tests generated from TrialSize::TwoSampleProportion.Equivalence on 2025-06-24
+  // Start of tests generated from TrialSize::TwoSampleProportion.Equivalence on 2025-07-06
   {
     name: "EQ | 50/50 | Basic",
     baseline: 10.0,
@@ -879,7 +879,7 @@ const regressionTestCases = [
   {
     name: "EQ | 50/50 | Tight margin",
     baseline: 15.0,
-    absoluteMde: 0.44999999999999996,
+    absoluteMde: 0.45,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1035,7 +1035,7 @@ const regressionTestCases = [
   {
     name: "EQ | 20/80 | Tight margin",
     baseline: 15.0,
-    absoluteMde: 0.44999999999999996,
+    absoluteMde: 0.45,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1178,7 +1178,7 @@ const regressionTestCases = [
   {
     name: "EQ | 99/1 | Tight margin",
     baseline: 15.0,
-    absoluteMde: 0.44999999999999996,
+    absoluteMde: 0.45,
     alpha: 0.05,
     power: 0.9,
     variantCount: 2,
@@ -1227,9 +1227,9 @@ const regressionTestCases = [
     trafficDistribution: [0.01, 0.99],
     expected: { total: 7207146, perGroup: [72072, 7135074] },
   },
-  // End of tests generated from TrialSize::TwoSampleProportion.Equivalence on 2025-06-24
+  // End of tests generated from TrialSize::TwoSampleProportion.Equivalence on 2025-07-06
 
-  // Start of tests generated from epiR::epi.ssninfb on 2025-06-24
+  // Start of tests generated from epiR::epi.ssninfb on 2025-07-06
   {
     name: "NI | 50/50 | Basic",
     baseline: 10.0,
@@ -1259,7 +1259,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | E-commerce conversion",
     baseline: 3.0,
-    absoluteMde: 0.30000000000000004,
+    absoluteMde: 0.3,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1389,7 +1389,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | E-commerce conversion",
     baseline: 3.0,
-    absoluteMde: 0.30000000000000004,
+    absoluteMde: 0.3,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1493,7 +1493,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | E-commerce conversion",
     baseline: 3.0,
-    absoluteMde: 0.30000000000000004,
+    absoluteMde: 0.3,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1571,7 +1571,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | E-commerce conversion",
     baseline: 3.0,
-    absoluteMde: 0.30000000000000004,
+    absoluteMde: 0.3,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1594,9 +1594,9 @@ const regressionTestCases = [
     trafficDistribution: [0.01, 0.99],
     expected: { total: 582868, perGroup: [5829, 577039] },
   },
-  // End of tests generated from epiR::epi.ssninfb on 2025-06-24
+  // End of tests generated from epiR::epi.ssninfb on 2025-07-06
 
-  // Start of tests generated from TrialSize::TwoSampleProportion.NIS on 2025-06-24
+  // Start of tests generated from TrialSize::TwoSampleProportion.NIS on 2025-07-06
   {
     name: "NI | 50/50 | Basic",
     baseline: 10.0,
@@ -1626,7 +1626,7 @@ const regressionTestCases = [
   {
     name: "NI | 50/50 | E-commerce",
     baseline: 3.0,
-    absoluteMde: 0.6000000000000001,
+    absoluteMde: 0.6,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1704,7 +1704,7 @@ const regressionTestCases = [
   {
     name: "NI | 30/70 | Purchase rate",
     baseline: 45.0,
-    absoluteMde: 1.3499999999999999,
+    absoluteMde: 1.35,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1756,7 +1756,7 @@ const regressionTestCases = [
   {
     name: "NI | 80/20 | E-commerce",
     baseline: 3.0,
-    absoluteMde: 0.6000000000000001,
+    absoluteMde: 0.6,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1847,7 +1847,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | Purchase rate",
     baseline: 45.0,
-    absoluteMde: 1.3499999999999999,
+    absoluteMde: 1.35,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1860,7 +1860,7 @@ const regressionTestCases = [
   {
     name: "NI | 10/90 | E-commerce",
     baseline: 3.0,
-    absoluteMde: 0.6000000000000001,
+    absoluteMde: 0.6,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1938,7 +1938,7 @@ const regressionTestCases = [
   {
     name: "NI | 1/99 | E-commerce",
     baseline: 3.0,
-    absoluteMde: 0.6000000000000001,
+    absoluteMde: 0.6,
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
@@ -1961,7 +1961,7 @@ const regressionTestCases = [
     trafficDistribution: [0.01, 0.99],
     expected: { total: 6245009, perGroup: [62451, 6182558] },
   },
-  // End of tests generated from TrialSize::TwoSampleProportion.NIS on 2025-06-24
+  // End of tests generated from TrialSize::TwoSampleProportion.NIS on 2025-07-06
 ];
 
 // Test that MDE -> SampleSize -> MDE returns the original MDE.
@@ -2118,7 +2118,7 @@ const symmetryTestCases = [
     alpha: 0.001,
     power: 0.999,
     variantCount: 13,
-    trafficDistribution: [0.5, ...Array(12).fill(0.5/12)],
+    trafficDistribution: [0.5, ...Array(12).fill(0.5 / 12)],
     correctionMethod: "bonferroni",
   },
   {
@@ -2272,7 +2272,9 @@ const symmetryTestCases = [
     alpha: 0.05,
     power: 0.8,
     variantCount: 10,
-    trafficDistribution: [0.91, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01],
+    trafficDistribution: [
+      0.91, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+    ],
     correctionMethod: "bonferroni",
   },
   {
@@ -2299,13 +2301,13 @@ const symmetryTestCases = [
   },
   {
     name: "Symmetry: Non-Terminating Decimals",
-    baseline: 10.0/3.0, // 3.333...%
-    absoluteMde: 1.0/3.0,
+    baseline: 10.0 / 3.0, // 3.333...%
+    absoluteMde: 1.0 / 3.0,
     testType: "two-tailed",
     alpha: 0.05,
     power: 0.8,
     variantCount: 3,
-    trafficDistribution: [1.0/3.0, 1.0/3.0, 1.0/3.0],
+    trafficDistribution: [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
   },
   {
     name: "Symmetry: π and e in the Mix",
@@ -2315,12 +2317,12 @@ const symmetryTestCases = [
     alpha: 0.05,
     power: 0.8,
     variantCount: 2,
-    trafficDistribution: [1/Math.PI, 1 - 1/Math.PI],
+    trafficDistribution: [1 / Math.PI, 1 - 1 / Math.PI],
   },
   {
     name: "Symmetry: The Baseline Destroyer",
     baseline: 99.9999,
-    absoluteMde: 9.99999e-05,
+    absoluteMde: 9.99999e-5,
     testType: "non-inferiority",
     alpha: 0.05,
     power: 0.8,
@@ -2417,10 +2419,10 @@ async function runSymmetryTest(testCase) {
     const totalSampleSize = results.totalSampleSize;
 
     // Call the inverse function with the total sample size + traffic distribution.
-    const recoveredMde = calculateMDEFromSampleSize(
-      totalSampleSize,
-      { ...testCase, buffer: 0 }
-    );
+    const recoveredMde = calculateMDEFromSampleSize(totalSampleSize, {
+      ...testCase,
+      buffer: 0,
+    });
 
     if (areClose(testCase.absoluteMde, recoveredMde)) {
       debugLog(

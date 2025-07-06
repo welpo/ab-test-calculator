@@ -30,8 +30,7 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
   js_object <- sprintf('  {
     name: "%s",
     baseline: %.3f,
-    mde: %.3f,
-    isRelativeMde: true,
+    absoluteMde: %.3f,
     alpha: %.3f,
     power: %.2f,
     variantCount: 2,
@@ -43,7 +42,7 @@ generate_test_case <- function(name, baseline, relative_effect_size, alpha, powe
   }',
     name,
     baseline * 100,
-    relative_effect_size * 100,
+    baseline * relative_effect_size * 100,
     alpha,
     power,
     testType,
@@ -111,5 +110,4 @@ js_test_cases <- sapply(test_cases, function(params) {
 
 cat(" // Start of tests generated from epiR::epi.ssninfb on", format(Sys.time(), "%Y-%m-%d"), "\n")
 cat(paste(js_test_cases, collapse = ",\n"))
-cat(",\n")
-cat("\n", "  // End of tests generated from epiR::epi.ssninfb on", format(Sys.time(), "%Y-%m-%d"))
+cat(",\n", "  // End of tests generated from epiR::epi.ssninfb on", format(Sys.time(), "%Y-%m-%d"))
