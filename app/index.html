@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=69efd988">
+    <link rel="stylesheet" href="styles.css?h=03d9582c">
 </head>
 
 <body>
@@ -194,7 +194,7 @@
                     </div>
 
                     <!-- Chart visualization -->
-                    <div class="chart-section" id="chartSection">
+                    <div class="chart-section" id="singleTabChartSection">
                         <div class="chart-legend">
                             <div class="legend-item">
                                 <div class="legend-color legend-undetectable"></div>
@@ -211,8 +211,8 @@
                         </div>
 
                         <div class="chart-container">
-                            <div class="chart-bar" id="chartBar"></div>
-                            <div class="chart-labels" id="chartLabels"></div>
+                            <div class="chart-bar" id="singleTabChartBar"></div>
+                            <div class="chart-labels" id="singleTabChartLabels"></div>
                         </div>
                     </div>
 
@@ -230,7 +230,7 @@
                         <table class="comparison-table" id="mdeTable">
                             <thead>
                                 <tr>
-                                    <th scope="col">Detectable Δ (%)</th>
+                                    <th scope="col">Δ</th>
                                     <th data-csv-header="Days">Duration</th>
                                     <th scope="col">From → To</th>
                                     <th scope="col">Total visitors</th>
@@ -245,6 +245,10 @@
                         <button class="comparison-button" id="addRowBtn">Add row</button>
                         <button class="comparison-button" id="downloadCSVBtn">Download CSV</button>
                         <button class="comparison-button" id="resetMDETableBtn">Reset table</button>
+                        <button class="comparison-button" id="toggleMDEChartBtn">Show chart</button>
+                    </div>
+                    <div class="chart-container hidden" id="mdeChartContainer">
+                        <svg id="mdeChart" viewBox="0 0 500 250"></svg>
                     </div>
                 </div>
 
@@ -255,7 +259,7 @@
                             <thead>
                                 <tr>
                                     <th scope="col">Days</th>
-                                    <th scope="col">Detectable Δ</th>
+                                    <th scope="col">Δ</th>
                                     <th scope="col">From → To</th>
                                     <th scope="col">Total visitors</th> </tr>
                                 </tr>
@@ -269,6 +273,10 @@
                         <button class="comparison-button" id="addTimeRowBtn">Add row</button>
                         <button class="comparison-button" id="downloadTimeCSVBtn">Download CSV</button>
                         <button class="comparison-button" id="resetTimeTableBtn">Reset table</button>
+                        <button class="comparison-button" id="toggleTimeChartBtn">Show chart</button>
+                    </div>
+                    <div class="chart-container hidden" id="timeChartContainer">
+                        <svg id="timeChart" viewBox="0 0 500 250"></svg>
                     </div>
                 </div>
             </div>
@@ -615,7 +623,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=f1a78d1f"></script>
+<script defer type="module" src="app.js?h=7647414e"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>

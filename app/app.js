@@ -43,6 +43,13 @@ const LEGEND_LABELS = {
     detectable: "Equivalent",
   },
 };
+const CHART_CONSTANTS = {
+  WIDTH: 500, // Must match index.html
+  HEIGHT: 250, // Must match index.html
+  HOVER_RADIUS: 12,
+  POINT_RADIUS: 4,
+  DEFAULT_MARGIN: { top: 40, right: 60, bottom: 60, left: 80 },
+};
 const mdeTableColumnConfig = [
   // Configuration for the "Δ → Days" table.
   { key: "inputValue", header: "Δ", isEditable: true, step: 0.1 },
@@ -96,6 +103,10 @@ const calculatorState = {
    * Values: 'tab-single', 'tab-table', 'tab-time' */
   activeTab: "tab-single",
 
+  /** Chart visibility state */
+  mdeChartVisible: false,
+  timeChartVisible: false,
+
   /** The name of the experiment plan for sharing/exporting. */
   planName: "",
 };
@@ -148,6 +159,9 @@ const durationValueElem = document.getElementById("durationValue");
 const sampleValueElem = document.getElementById("sampleValue");
 const timeEstimateElem = document.getElementById("timeEstimate");
 const sampleSubtitleElem = document.getElementById("sampleSubtitle");
+const singleTabChartSection = document.getElementById("singleTabChartSection");
+const singleTabChartBar = document.getElementById("singleTabChartBar");
+const singleTabChartLabels = document.getElementById("singleTabChartLabels");
 const mdeTable = document.getElementById("mdeTable");
 const mdeTableBody = mdeTable.querySelector("tbody");
 const addRowBtn = document.getElementById("addRowBtn");
@@ -158,6 +172,10 @@ const timeTable = document.getElementById("timeTable");
 const timeTableBody = timeTable.querySelector("tbody");
 const addTimeRowBtn = document.getElementById("addTimeRowBtn");
 const resetTimeTableBtn = document.getElementById("resetTimeTableBtn");
+const toggleMDEChartBtn = document.getElementById("toggleMDEChartBtn");
+const toggleTimeChartBtn = document.getElementById("toggleTimeChartBtn");
+const mdeChartContainer = document.getElementById("mdeChartContainer");
+const timeChartContainer = document.getElementById("timeChartContainer");
 const optimalDistributionBtn = document.getElementById(
   "optimalDistributionBtn"
 );
@@ -172,8 +190,26 @@ initializeUI();
 function initializeUI() {
   loadPersistentSettings();
   decodeStateFromURL();
+  syncChartVisibilityUI();
   setupEventListeners();
   runUpdateCycle();
+}
+
+function syncChartVisibilityUI() {
+  if (calculatorState.mdeChartVisible) {
+    mdeChartContainer.classList.remove("hidden");
+    toggleMDEChartBtn.textContent = "Hide chart";
+  } else {
+    mdeChartContainer.classList.add("hidden");
+    toggleMDEChartBtn.textContent = "Show chart";
+  }
+  if (calculatorState.timeChartVisible) {
+    timeChartContainer.classList.remove("hidden");
+    toggleTimeChartBtn.textContent = "Hide chart";
+  } else {
+    timeChartContainer.classList.add("hidden");
+    toggleTimeChartBtn.textContent = "Show chart";
+  }
 }
 
 function loadPersistentSettings() {
@@ -186,6 +222,12 @@ function loadPersistentSettings() {
     ["tab-single", "tab-table", "tab-time"].includes(savedSettings.lastTab)
   ) {
     calculatorState.activeTab = savedSettings.lastTab;
+  }
+  if (typeof savedSettings.mdeChartVisible === "boolean") {
+    calculatorState.mdeChartVisible = savedSettings.mdeChartVisible;
+  }
+  if (typeof savedSettings.timeChartVisible === "boolean") {
+    calculatorState.timeChartVisible = savedSettings.timeChartVisible;
   }
   if (settingsCheckbox) {
     settingsCheckbox.checked = calculatorState.isAdvancedOpen;
@@ -269,12 +311,20 @@ function decodeStateFromURL() {
       calculatorState.timeTableRows = timeValues;
     }
   }
+  if (urlParams.has("mdechart")) {
+    calculatorState.mdeChartVisible = urlParams.get("mdechart") === "1";
+  }
+  if (urlParams.has("timechart")) {
+    calculatorState.timeChartVisible = urlParams.get("timechart") === "1";
+  }
 }
 
 function savePersistentSettings() {
   const settingsToSave = {
     lastTab: calculatorState.activeTab,
     isAdvancedOpen: calculatorState.isAdvancedOpen,
+    mdeChartVisible: calculatorState.mdeChartVisible,
+    timeChartVisible: calculatorState.timeChartVisible,
   };
   saveSettings(settingsToSave);
 }
@@ -410,6 +460,32 @@ function setupEventListeners() {
     runUpdateCycle();
   });
 
+  toggleMDEChartBtn.addEventListener("click", () => {
+    calculatorState.mdeChartVisible = !calculatorState.mdeChartVisible;
+    if (calculatorState.mdeChartVisible) {
+      mdeChartContainer.classList.remove("hidden");
+      toggleMDEChartBtn.textContent = "Hide chart";
+    } else {
+      mdeChartContainer.classList.add("hidden");
+      toggleMDEChartBtn.textContent = "Show chart";
+    }
+    savePersistentSettings();
+    runUpdateCycle();
+  });
+
+  toggleTimeChartBtn.addEventListener("click", () => {
+    calculatorState.timeChartVisible = !calculatorState.timeChartVisible;
+    if (calculatorState.timeChartVisible) {
+      timeChartContainer.classList.remove("hidden");
+      toggleTimeChartBtn.textContent = "Hide chart";
+    } else {
+      timeChartContainer.classList.add("hidden");
+      toggleTimeChartBtn.textContent = "Show chart";
+    }
+    savePersistentSettings();
+    runUpdateCycle();
+  });
+
   function setupTableDelegation(tableElement, rowInputDataKey, inputClassName) {
     tableElement.addEventListener("click", (e) => {
       if (e.target.classList.contains("delete-row")) {
@@ -541,7 +617,6 @@ function runUpdateCycle() {
 function computeAbsoluteMde(state) {
   return state.isRelativeMde ? state.baseline * (state.mde / 100) : state.mde;
 }
-
 
 function validateInputs(state) {
   const basicErrors = getBasicInputErrors(state);
@@ -770,12 +845,10 @@ function calculateResultsForActiveTab(state) {
 }
 
 function getSampleSizeAndDurationForMde(mdeValue, state) {
-  const absoluteMde = state.isRelativeMde ? state.baseline * (mdeValue / 100) : mdeValue;
-  const mdeInfo = calculateMDE(
-    state.baseline,
-    absoluteMde,
-    state.testType
-  );
+  const absoluteMde = state.isRelativeMde
+    ? state.baseline * (mdeValue / 100)
+    : mdeValue;
+  const mdeInfo = calculateMDE(state.baseline, absoluteMde, state.testType);
   const experimentSize = calculateExperimentSize({
     baseline: state.baseline / 100,
     absoluteMde: absoluteMde,
@@ -824,11 +897,7 @@ function calculateTimeRowResult(days, state) {
   });
   const absoluteMde = mde;
   const displayMde = state.isRelativeMde ? (mde / state.baseline) * 100 : mde;
-  const mdeInfo = calculateMDE(
-    state.baseline,
-    absoluteMde,
-    state.testType
-  );
+  const mdeInfo = calculateMDE(state.baseline, absoluteMde, state.testType);
   const targetRate = mdeInfo.targetRate * 100;
   return {
     baseline: state.baseline,
@@ -950,6 +1019,7 @@ function renderSingleEstimateResults(state, results, errors) {
     if (allSame) {
       sampleValueElem.textContent = sampleSizes[0].toLocaleString();
       sampleSubtitleElem.classList.remove("hidden");
+      singleTabChartSection.classList.remove("hidden");
     } else {
       const variantLabels = Array.from({ length: state.variants }, (_, i) => {
         const letter = String.fromCharCode(65 + i);
@@ -981,6 +1051,7 @@ function renderSingleEstimateResults(state, results, errors) {
     sampleSubtitleElem.classList.remove("hidden");
     timeEstimateElem.textContent = "…";
     explanationElem.innerHTML = "Enter valid parameters to see the test plan.";
+    singleTabChartSection.classList.add("hidden");
   }
 }
 
@@ -1176,6 +1247,20 @@ function renderDataTables(state, results) {
     "time-input",
     timeTableColumnConfig
   );
+  if (
+    state.activeTab === "tab-table" &&
+    results.mdeTableData &&
+    state.mdeChartVisible
+  ) {
+    renderMDEChart(state, results.mdeTableData);
+  }
+  if (
+    state.activeTab === "tab-time" &&
+    results.timeTableData &&
+    state.timeChartVisible
+  ) {
+    renderTimeChart(state, results.timeTableData);
+  }
 }
 
 function renderTableBody(
@@ -1497,11 +1582,9 @@ function generateLabels(min, max, boundaries, testType, count = 6) {
 }
 
 function updateChart(baseline, boundaries, scale, testType) {
-  const chartBar = document.getElementById("chartBar");
-  const chartLabels = document.getElementById("chartLabels");
-  if (!chartBar || !chartLabels) return;
-  chartBar.innerHTML = "";
-  chartLabels.innerHTML = "";
+  if (!singleTabChartBar || !singleTabChartLabels) return;
+  singleTabChartBar.innerHTML = "";
+  singleTabChartLabels.innerHTML = "";
   const baselinePos = ((baseline - scale.min) / (scale.max - scale.min)) * 100;
   const lowerPos =
     boundaries.lower !== null
@@ -1516,60 +1599,60 @@ function updateChart(baseline, boundaries, scale, testType) {
     undetectable.className = "zone zone-undetectable zone-left";
     undetectable.style.left = "0%";
     undetectable.style.width = upperPos + "%";
-    chartBar.appendChild(undetectable);
+    singleTabChartBar.appendChild(undetectable);
     const detectable = document.createElement("div");
     detectable.className = "zone zone-detectable zone-right";
     detectable.style.left = upperPos + "%";
     detectable.style.width = 100 - upperPos + "%";
-    chartBar.appendChild(detectable);
+    singleTabChartBar.appendChild(detectable);
   } else if (testType === "two-tailed") {
     const detectableLeft = document.createElement("div");
     detectableLeft.className = "zone zone-detectable zone-left";
     detectableLeft.style.left = "0%";
     detectableLeft.style.width = lowerPos + "%";
-    chartBar.appendChild(detectableLeft);
+    singleTabChartBar.appendChild(detectableLeft);
     const undetectable = document.createElement("div");
     undetectable.className = "zone zone-undetectable zone-middle";
     undetectable.style.left = lowerPos + "%";
     undetectable.style.width = upperPos - lowerPos + "%";
-    chartBar.appendChild(undetectable);
+    singleTabChartBar.appendChild(undetectable);
     const detectableRight = document.createElement("div");
     detectableRight.className = "zone zone-detectable zone-right";
     detectableRight.style.left = upperPos + "%";
     detectableRight.style.width = 100 - upperPos + "%";
-    chartBar.appendChild(detectableRight);
+    singleTabChartBar.appendChild(detectableRight);
   } else if (testType === "non-inferiority") {
     const undetectable = document.createElement("div");
     undetectable.className = "zone zone-undetectable zone-left";
     undetectable.style.left = "0%";
     undetectable.style.width = lowerPos + "%";
-    chartBar.appendChild(undetectable);
+    singleTabChartBar.appendChild(undetectable);
     const detectable = document.createElement("div");
     detectable.className = "zone zone-detectable zone-right";
     detectable.style.left = lowerPos + "%";
     detectable.style.width = 100 - lowerPos + "%";
-    chartBar.appendChild(detectable);
+    singleTabChartBar.appendChild(detectable);
   } else if (testType === "equivalence") {
     const undetectableLeft = document.createElement("div");
     undetectableLeft.className = "zone zone-undetectable zone-left";
     undetectableLeft.style.left = "0%";
     undetectableLeft.style.width = lowerPos + "%";
-    chartBar.appendChild(undetectableLeft);
+    singleTabChartBar.appendChild(undetectableLeft);
     const detectable = document.createElement("div");
     detectable.className = "zone zone-detectable zone-middle";
     detectable.style.left = lowerPos + "%";
     detectable.style.width = upperPos - lowerPos + "%";
-    chartBar.appendChild(detectable);
+    singleTabChartBar.appendChild(detectable);
     const undetectableRight = document.createElement("div");
     undetectableRight.className = "zone zone-undetectable zone-right";
     undetectableRight.style.left = upperPos + "%";
     undetectableRight.style.width = 100 - upperPos + "%";
-    chartBar.appendChild(undetectableRight);
+    singleTabChartBar.appendChild(undetectableRight);
   }
   const baselineMarker = document.createElement("div");
   baselineMarker.className = "baseline-marker";
   baselineMarker.style.left = baselinePos + "%";
-  chartBar.appendChild(baselineMarker);
+  singleTabChartBar.appendChild(baselineMarker);
   const labels = generateLabels(scale.min, scale.max, boundaries, testType);
   labels.forEach((label, index) => {
     const labelElement = document.createElement("span");
@@ -1580,7 +1663,7 @@ function updateChart(baseline, boundaries, scale, testType) {
     ) {
       labelElement.setAttribute("data-boundary", "true");
     }
-    chartLabels.appendChild(labelElement);
+    singleTabChartLabels.appendChild(labelElement);
   });
 }
 
@@ -1800,9 +1883,28 @@ function formatCorrection(value) {
 }
 
 function encodeStateToURL(state) {
+  const tabSpecificParamConfig = {
+    "tab-single": {
+      mde: state.mde,
+    },
+    "tab-table": {
+      tblmde:
+        state.mdeTableRows && state.mdeTableRows.length > 0
+          ? state.mdeTableRows.join("_")
+          : null,
+      mdechart: state.mdeChartVisible ? 1 : null,
+    },
+    "tab-time": {
+      tbltime:
+        state.timeTableRows && state.timeTableRows.length > 0
+          ? state.timeTableRows.join("_")
+          : null,
+      timechart: state.timeChartVisible ? 1 : null,
+    },
+  };
   const params = {
+    // Parameters that apply to all tabs.
     bl: state.baseline,
-    mde: state.mde,
     rel: state.isRelativeMde ? 1 : 0,
     var: state.variants,
     tf: state.trafficFlow,
@@ -1814,6 +1916,7 @@ function encodeStateToURL(state) {
     vs: state.visitors,
     name: state.planName,
     tab: state.activeTab.replace("tab-", ""),
+    ...(tabSpecificParamConfig[state.activeTab] || {}),
   };
   if (
     (state.variants > 2 || state.hasCustomTrafficDistribution) &&
@@ -1821,19 +1924,6 @@ function encodeStateToURL(state) {
     state.trafficDistribution.length > 0
   ) {
     params.dist = state.trafficDistribution.join("_");
-  }
-  if (
-    state.activeTab === "tab-table" &&
-    state.mdeTableRows &&
-    state.mdeTableRows.length > 0
-  ) {
-    params.tblmde = state.mdeTableRows.join("_");
-  } else if (
-    state.activeTab === "tab-time" &&
-    state.timeTableRows &&
-    state.timeTableRows.length > 0
-  ) {
-    params.tbltime = state.timeTableRows.join("_");
   }
   const queryString = Object.entries(params)
     .filter(
@@ -1873,4 +1963,408 @@ function handleShareButtonClick() {
       shareButton.innerHTML = originalHTML;
     }, 2000);
   });
+}
+
+function renderMDEChart(state, mdeTableData) {
+  const userXValues = state.mdeTableRows;
+  const userYValues = mdeTableData.map((d) => d.durationDays);
+  if (!userXValues || !userYValues || userXValues.length === 0) {
+    return;
+  }
+  const minX = Math.min(...userXValues);
+  const maxX = Math.max(...userXValues);
+  const curveXValues = [];
+  const curveYValues = [];
+  // Generate points every 0.5% for a smooth curve.
+  for (let x = minX; x <= maxX; x += 0.5) {
+    const tempMdeTableRows = [x];
+    const tempResults = calculateResultsForActiveTab({
+      ...state,
+      mdeTableRows: tempMdeTableRows,
+      activeTab: "tab-table",
+    });
+    if (
+      tempResults &&
+      tempResults.mdeTableData &&
+      tempResults.mdeTableData[0]
+    ) {
+      const result = tempResults.mdeTableData[0];
+      if (
+        result.durationDays &&
+        result.durationDays > 0 &&
+        !isNaN(result.durationDays)
+      ) {
+        curveXValues.push(x);
+        curveYValues.push(result.durationDays);
+      }
+    }
+  }
+  if (curveXValues.length === 0) {
+    return;
+  }
+  const config = {
+    ...getChartConfig(),
+    data: mdeTableData,
+    xValues: curveXValues,
+    yValues: curveYValues,
+    userSelectedX: userXValues,
+    userSelectedY: userYValues,
+    formatX: (value) => {
+      const unit = state.isRelativeMde ? "%" : "pp";
+      return value.toFixed(2) + unit;
+    },
+    formatY: (value) => Math.round(value).toLocaleString(),
+    xLabel: "Δ",
+    yLabel: "Days",
+  };
+  renderChart("mdeChart", config);
+}
+
+function renderTimeChart(state, timeTableData) {
+  const userXValues = state.timeTableRows;
+  const userYValues = timeTableData.map((d) => d.mde);
+  if (!userXValues || !userYValues || userXValues.length === 0) {
+    return;
+  }
+  const minX = Math.min(...userXValues);
+  const maxX = Math.max(...userXValues);
+  const curveXValues = [];
+  const curveYValues = [];
+  // Generate points every day for a smooth curve.
+  for (let x = minX; x <= maxX; x += 1) {
+    const tempTimeTableRows = [x];
+    const tempResults = calculateResultsForActiveTab({
+      ...state,
+      timeTableRows: tempTimeTableRows,
+      activeTab: "tab-time",
+    });
+    if (
+      tempResults &&
+      tempResults.timeTableData &&
+      tempResults.timeTableData[0]
+    ) {
+      const result = tempResults.timeTableData[0];
+      if (result.mde && result.mde > 0 && !isNaN(result.mde)) {
+        curveXValues.push(x);
+        curveYValues.push(result.mde);
+      }
+    }
+  }
+  if (curveXValues.length === 0) {
+    return;
+  }
+  const config = {
+    ...getChartConfig(),
+    data: timeTableData,
+    xValues: curveXValues,
+    yValues: curveYValues,
+    userSelectedX: userXValues,
+    userSelectedY: userYValues,
+    formatX: (value) => Math.round(value).toString(),
+    formatY: (value) => {
+      const unit = state.isRelativeMde ? "%" : "pp";
+      return value.toFixed(2) + unit;
+    },
+    xLabel: "Days",
+    yLabel: "Δ",
+  };
+  renderChart("timeChart", config);
+}
+
+function renderChart(svgId, config) {
+  const svg = document.getElementById(svgId);
+  if (!svg || !config.data || config.data.length === 0) return;
+  svg.innerHTML = "";
+  const chartDimensions = {
+    width: CHART_CONSTANTS.WIDTH,
+    height: CHART_CONSTANTS.HEIGHT,
+    margin: config.margin || CHART_CONSTANTS.DEFAULT_MARGIN,
+  };
+  const bounds = calculateChartBounds(config);
+  const transformer = createCoordinateTransformer(bounds, chartDimensions);
+  renderGrid(svg, config, transformer, chartDimensions);
+  renderAxes(svg, chartDimensions);
+  renderDataLine(svg, config, transformer);
+  renderDataPoints(svg, config, transformer);
+  renderAxisTicks(svg, config, bounds, transformer, chartDimensions);
+  renderAxisLabels(svg, config, chartDimensions);
+  setupChartTooltips(svg);
+}
+
+function renderGrid(svg, config, transformer, chartDimensions) {
+  if (!config.showGrid) return;
+  const { margin } = chartDimensions;
+  const { chartWidth, chartHeight } = transformer;
+  const gridLines = config.gridLines || 5;
+  for (let i = 1; i < gridLines; i++) {
+    const x = margin.left + (chartWidth * i) / gridLines;
+    const gridLineX = createSVGElement("line", {
+      x1: x,
+      y1: margin.top,
+      x2: x,
+      y2: margin.top + chartHeight,
+      stroke: "var(--color-border)",
+      "stroke-width": "1",
+    });
+    svg.appendChild(gridLineX);
+    const y = margin.top + (chartHeight * i) / gridLines;
+    const gridLineY = createSVGElement("line", {
+      x1: margin.left,
+      y1: y,
+      x2: margin.left + chartWidth,
+      y2: y,
+      stroke: "var(--color-border)",
+      "stroke-width": "1",
+    });
+    svg.appendChild(gridLineY);
+  }
+}
+
+function renderAxes(svg, chartDimensions) {
+  const { width, height, margin } = chartDimensions;
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  const xAxis = createSVGElement("line", {
+    x1: margin.left,
+    y1: margin.top + chartHeight,
+    x2: margin.left + chartWidth,
+    y2: margin.top + chartHeight,
+    stroke: "var(--color-border)",
+    "stroke-width": "2",
+  });
+  svg.appendChild(xAxis);
+  const yAxis = createSVGElement("line", {
+    x1: margin.left,
+    y1: margin.top,
+    x2: margin.left,
+    y2: margin.top + chartHeight,
+    stroke: "var(--color-border)",
+    "stroke-width": "2",
+  });
+  svg.appendChild(yAxis);
+}
+
+function renderDataLine(svg, config, transformer) {
+  if (!config.showLine) return;
+  let pathData = "";
+  for (let i = 0; i < config.xValues.length; i++) {
+    const x = transformer.toScreenX(config.xValues[i]);
+    const y = transformer.toScreenY(config.yValues[i]);
+    pathData += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  }
+  const path = createSVGElement("path", {
+    d: pathData,
+    stroke: "var(--accent)",
+    "stroke-width": config.lineWidth || 3,
+    fill: "none",
+  });
+  svg.appendChild(path);
+}
+
+function renderDataPoints(svg, config, transformer) {
+  if (!config.showPoints || !config.userSelectedX || !config.userSelectedY)
+    return;
+  for (let i = 0; i < config.userSelectedX.length; i++) {
+    const x = transformer.toScreenX(config.userSelectedX[i]);
+    const y = transformer.toScreenY(config.userSelectedY[i]);
+    const xValue = config.formatX
+      ? config.formatX(config.userSelectedX[i])
+      : config.userSelectedX[i].toFixed(1);
+    const yValue = config.formatY
+      ? config.formatY(config.userSelectedY[i])
+      : config.userSelectedY[i].toFixed(1);
+    const result = config.data[i];
+    const crChangeText = result
+      ? `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(2)}%`
+      : "";
+    const tooltipText = `${config.xLabel || "X"}: ${xValue} • ${
+      config.yLabel || "Y"
+    }: ${yValue} • ${crChangeText}`;
+    const hoverArea = createSVGElement("circle", {
+      cx: x,
+      cy: y,
+      r: CHART_CONSTANTS.HOVER_RADIUS,
+      fill: "transparent",
+      class: "chart-point",
+    });
+    hoverArea.dataset.tooltip = tooltipText;
+    svg.appendChild(hoverArea);
+    const circle = createSVGElement("circle", {
+      cx: x,
+      cy: y,
+      r: (config.pointRadius || CHART_CONSTANTS.POINT_RADIUS) + 1,
+      fill: "var(--accent)",
+      stroke: "var(--color-bg)",
+      "stroke-width": "2",
+    });
+    circle.style.pointerEvents = "none";
+    svg.appendChild(circle);
+  }
+}
+
+function renderAxisTicks(svg, config, bounds, transformer, chartDimensions) {
+  const { width, height, margin } = chartDimensions;
+  const { adjustedMinY, adjustedMaxY, minX, maxX } = bounds;
+  const xTicks = config.xTicks || 5;
+  for (let i = 0; i <= xTicks; i++) {
+    const value = minX + ((maxX - minX) * i) / xTicks;
+    const x = margin.left + (transformer.chartWidth * i) / xTicks;
+    const label = config.formatX ? config.formatX(value) : value.toFixed(1);
+    const text = createSVGElement("text", {
+      x: x,
+      y: height - margin.bottom + 20,
+      "text-anchor": "middle",
+      fill: "var(--color-text)",
+      "font-family": "var(--font-family)",
+      "font-size": "var(--font-size-sm)",
+    });
+    text.textContent = label;
+    svg.appendChild(text);
+  }
+  const yTicks = config.yTicks || 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const value = adjustedMinY + ((adjustedMaxY - adjustedMinY) * i) / yTicks;
+    const y =
+      margin.top +
+      transformer.chartHeight -
+      (transformer.chartHeight * i) / yTicks;
+    const label = config.formatY ? config.formatY(value) : value.toFixed(1);
+    const text = createSVGElement("text", {
+      x: margin.left - 10,
+      y: y + 3,
+      "text-anchor": "end",
+      fill: "var(--color-text)",
+      "font-family": "var(--font-family)",
+      "font-size": "var(--font-size-sm)",
+    });
+    text.textContent = label;
+    svg.appendChild(text);
+  }
+}
+
+function renderAxisLabels(svg, config, chartDimensions) {
+  const { width, height } = chartDimensions;
+  if (config.xLabel) {
+    const xLabelText = createSVGElement("text", {
+      x: width / 2,
+      y: height - 15,
+      "text-anchor": "middle",
+      fill: "var(--color-text)",
+      "font-family": "var(--font-family)",
+      "font-size": "var(--font-size-base)",
+      "font-weight": "500",
+    });
+    xLabelText.textContent = config.xLabel;
+    svg.appendChild(xLabelText);
+  }
+
+  if (config.yLabel) {
+    const isDaysChart = config.yLabel === "Days";
+    const xPos = isDaysChart ? 35 : 18;
+    const yLabelText = createSVGElement("text", {
+      x: xPos,
+      y: height / 2,
+      "text-anchor": "middle",
+      fill: "var(--color-text)",
+      "font-family": "var(--font-family)",
+      "font-size": "var(--font-size-base)",
+      "font-weight": "500",
+      transform: `rotate(-90, ${xPos}, ${height / 2})`,
+    });
+    yLabelText.textContent = config.yLabel;
+    svg.appendChild(yLabelText);
+  }
+}
+
+function setupChartTooltips(svg) {
+  if (!svg) return;
+  let tooltip = null;
+  const chartPoints = svg.querySelectorAll(".chart-point");
+  chartPoints.forEach((point) => {
+    point.addEventListener("mouseenter", (e) => {
+      showChartTooltip(e, point.dataset.tooltip);
+    });
+    point.addEventListener("mouseleave", () => {
+      hideChartTooltip();
+    });
+    point.addEventListener("mousemove", (e) => {
+      if (tooltip) {
+        positionTooltip(e, tooltip);
+      }
+    });
+  });
+  function showChartTooltip(event, text) {
+    hideChartTooltip();
+    tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip visible";
+    tooltip.textContent = text;
+    document.body.appendChild(tooltip);
+    positionTooltip(event, tooltip);
+  }
+  function hideChartTooltip() {
+    if (tooltip) {
+      tooltip.remove();
+      tooltip = null;
+    }
+  }
+  function positionTooltip(event, tooltip) {
+    const rect = tooltip.getBoundingClientRect();
+    const x = event.clientX - rect.width / 2;
+    const y = event.clientY + window.scrollY - rect.height - 12;
+    tooltip.style.left =
+      Math.max(10, Math.min(x, window.innerWidth - rect.width - 10)) + "px";
+    tooltip.style.top = Math.max(10, y) + "px";
+  }
+}
+
+function calculateChartBounds(config) {
+  const { xValues, yValues } = config;
+  const minX = Math.min(...xValues);
+  const maxX = Math.max(...xValues);
+  const minY = Math.min(...yValues);
+  const maxY = Math.max(...yValues);
+  return {
+    minX,
+    maxX,
+    adjustedMinY: minY === maxY ? Math.max(0, minY - 1) : minY,
+    adjustedMaxY: minY === maxY ? maxY + 1 : maxY,
+  };
+}
+
+function createCoordinateTransformer(bounds, chartDimensions) {
+  const { minX, maxX, adjustedMinY, adjustedMaxY } = bounds;
+  const { width, height, margin } = chartDimensions;
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  return {
+    toScreenX: (x) => margin.left + ((x - minX) / (maxX - minX)) * chartWidth,
+    toScreenY: (y) =>
+      margin.top +
+      chartHeight -
+      ((y - adjustedMinY) / (adjustedMaxY - adjustedMinY)) * chartHeight,
+    chartWidth,
+    chartHeight,
+  };
+}
+
+function createSVGElement(tag, attributes = {}) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value);
+  });
+  return element;
+}
+
+function getChartConfig() {
+  return {
+    showGrid: true,
+    gridLines: 4,
+    showLine: true,
+    showPoints: true,
+    lineWidth: 2.5,
+    pointRadius: 3,
+    xTicks: 4,
+    yTicks: 4,
+    margin: { top: 40, right: 50, bottom: 60, left: 80 },
+  };
 }
