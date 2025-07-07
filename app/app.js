@@ -107,6 +107,7 @@ const calculatorState = {
   mdeChartVisible: false,
   timeChartVisible: false,
 
+  preferredDownloadFormat: "text",
   /** The name of the experiment plan for sharing/exporting. */
   planName: "",
 };
@@ -179,6 +180,11 @@ const timeChartContainer = document.getElementById("timeChartContainer");
 const optimalDistributionBtn = document.getElementById(
   "optimalDistributionBtn"
 );
+const downloadBtn = document.getElementById("downloadPlanBtn");
+const downloadMenu = document.getElementById("downloadPlanMenu");
+let downloadActionSpan = document.querySelector(
+  "#downloadPlanBtn .download-action"
+);
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
 const downloadTimeCSVBtn = document.getElementById("downloadTimeCSVBtn");
@@ -228,6 +234,13 @@ function loadPersistentSettings() {
   }
   if (typeof savedSettings.timeChartVisible === "boolean") {
     calculatorState.timeChartVisible = savedSettings.timeChartVisible;
+  }
+  if (
+    savedSettings.preferredDownloadFormat &&
+    ["text", "markdown"].includes(savedSettings.preferredDownloadFormat)
+  ) {
+    calculatorState.preferredDownloadFormat =
+      savedSettings.preferredDownloadFormat;
   }
   if (settingsCheckbox) {
     settingsCheckbox.checked = calculatorState.isAdvancedOpen;
@@ -325,6 +338,7 @@ function savePersistentSettings() {
     isAdvancedOpen: calculatorState.isAdvancedOpen,
     mdeChartVisible: calculatorState.mdeChartVisible,
     timeChartVisible: calculatorState.timeChartVisible,
+    preferredDownloadFormat: calculatorState.preferredDownloadFormat,
   };
   saveSettings(settingsToSave);
 }
@@ -591,6 +605,38 @@ function setupEventListeners() {
       shareButton.click();
     }
   });
+
+  downloadBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    const dropdown = this.closest(".dropdown");
+    if (e.target.closest(".download-action")) {
+      downloadPlan(calculatorState.preferredDownloadFormat);
+      dropdown.classList.remove("open");
+    } else {
+      e.stopPropagation();
+      dropdown.classList.toggle("open");
+    }
+  });
+
+  downloadMenu.addEventListener("click", function (e) {
+    const item = e.target.closest(".dropdown-item");
+    if (!item) return;
+    e.preventDefault();
+    const format = item.dataset.format;
+    const dropdown = this.closest(".dropdown");
+    calculatorState.preferredDownloadFormat = format;
+    savePersistentSettings();
+    updateDownloadButtonUI();
+    dropdown.classList.remove("open");
+    downloadPlan(format);
+  });
+  // Close dropdown when clicking anywhere else on the page.
+  document.addEventListener("click", function (e) {
+    const openDropdown = document.querySelector(".dropdown.open");
+    if (openDropdown && !openDropdown.contains(e.target)) {
+      openDropdown.classList.remove("open");
+    }
+  });
 }
 
 function debounce(func, delay) {
@@ -612,6 +658,17 @@ function runUpdateCycle() {
       ? calculateResultsForActiveTab(calculatorState)
       : null;
   render(calculatorState, results, errors);
+}
+
+function updateDownloadButtonUI() {
+  const formatToExtension = {
+    text: ".txt",
+    markdown: ".md",
+  };
+  const currentFormat = calculatorState.preferredDownloadFormat;
+  const extension = formatToExtension[currentFormat] || ".txt";
+  downloadActionSpan.textContent = `Download as ${extension}`;
+  downloadActionSpan.dataset.format = currentFormat;
 }
 
 function computeAbsoluteMde(state) {
@@ -1082,6 +1139,10 @@ function renderUIState(state) {
   const isSingleTab = state.activeTab === "tab-single";
   mdeInput.classList.toggle("hidden", !isSingleTab);
   multipleMdesText.classList.toggle("hidden", isSingleTab);
+  const downloadPlanSection = document.getElementById("download-plan-section");
+  if (downloadPlanSection) {
+    downloadPlanSection.classList.toggle("hidden", !isSingleTab);
+  }
 }
 
 function renderValidationErrors(errors) {
@@ -1688,46 +1749,39 @@ function updateChartVisualization(state) {
 function formatTimeEstimate(days) {
   if (days === 0) {
     return "0 days";
-  } else if (days < 7) {
-    return `${days} day${days !== 1 ? "s" : ""}`;
-  } else if (days < 30) {
-    const weeks = Math.floor(days / 7);
-    const remainingDays = days % 7;
-    let timeEstimateText = `${weeks} week${weeks !== 1 ? "s" : ""}`;
-    if (remainingDays > 0) {
-      timeEstimateText += ` and ${remainingDays} day${
-        remainingDays !== 1 ? "s" : ""
-      }`;
-    }
-    return timeEstimateText;
-  } else if (days < 365) {
-    const months = Math.floor(days / 30);
-    const remainingDaysAfterMonths = days % 30;
-    let timeEstimateText = `${months} month${months !== 1 ? "s" : ""}`;
-    if (remainingDaysAfterMonths > 0) {
-      const weeks = Math.floor(remainingDaysAfterMonths / 7);
-      const remainingDays = remainingDaysAfterMonths % 7;
-      if (weeks > 0) {
-        timeEstimateText += ` and ${weeks} week${weeks !== 1 ? "s" : ""}`;
-      }
-      if (remainingDays > 0) {
-        timeEstimateText += ` and ${remainingDays} day${
-          remainingDays !== 1 ? "s" : ""
-        }`;
-      }
-    }
-    return timeEstimateText;
+  }
+  const parts = [];
+  let remainingDays = days;
+  const timeUnits = {
+    year: 365,
+    month: 30,
+    week: 7,
+  };
+  const years = Math.floor(remainingDays / timeUnits.year);
+  if (years > 0) {
+    parts.push(`${years} year${years !== 1 ? "s" : ""}`);
+    remainingDays %= timeUnits.year;
+  }
+  const months = Math.floor(remainingDays / timeUnits.month);
+  if (months > 0) {
+    parts.push(`${months} month${months !== 1 ? "s" : ""}`);
+    remainingDays %= timeUnits.month;
+  }
+  const weeks = Math.floor(remainingDays / timeUnits.week);
+  if (weeks > 0) {
+    parts.push(`${weeks} week${weeks !== 1 ? "s" : ""}`);
+    remainingDays %= timeUnits.week;
+  }
+  if (remainingDays > 0) {
+    parts.push(`${remainingDays} day${remainingDays !== 1 ? "s" : ""}`);
+  }
+  if (parts.length === 1) {
+    return parts[0];
+  } else if (parts.length === 2) {
+    return parts.join(" and ");
   } else {
-    const years = Math.floor(days / 365);
-    const remainingDaysAfterYears = days % 365;
-    let timeEstimateText = `${years} year${years !== 1 ? "s" : ""}`;
-    if (remainingDaysAfterYears > 0) {
-      const months = Math.floor(remainingDaysAfterYears / 30);
-      if (months > 0) {
-        timeEstimateText += ` and ${months} month${months !== 1 ? "s" : ""}`;
-      }
-    }
-    return timeEstimateText;
+    const lastPart = parts.pop();
+    return `${parts.join(", ")}, and ${lastPart}`;
   }
 }
 
@@ -1769,7 +1823,7 @@ function downloadTableAsCSV(tableId) {
     results[dataKey],
     config
   );
-  downloadCSV(content, filename);
+  downloadFile(content, filename, "text/csv;charset=utf-8;");
 }
 
 function createCSVContentFromData(tableId, rowData, resultsData) {
@@ -1821,33 +1875,28 @@ function generateExportRowData(result, config, inputValue) {
   return config.map((col) => dataForExport[col.key] || "");
 }
 
-function downloadCSV(content, filename) {
+function downloadFile(content, filename, mimeType) {
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  // Create blob with BOM for UTF-8.
   const BOM = "\uFEFF";
-  const blob = new Blob([BOM + content], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([BOM + content], { type: mimeType });
   if (isIOS) {
     const reader = new FileReader();
     reader.onload = function (e) {
       let dataUrl = e.target.result;
-      // Set MIME type to help Safari understand this is a file.
       dataUrl = dataUrl.replace(/^data:[^;]*;/, "data:attachment/file;");
-      // Create a temporary link to open it.
       const link = document.createElement("a");
       link.href = dataUrl;
       link.target = "_blank";
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      // Cleanup.
       setTimeout(() => {
         document.body.removeChild(link);
       }, 100);
     };
     reader.readAsDataURL(blob);
   } else {
-    // For all other browsers, standard Blob approach.
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1855,12 +1904,262 @@ function downloadCSV(content, filename) {
     link.style.display = "none";
     document.body.appendChild(link);
     link.click();
-    // Cleanup.
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }, 100);
   }
+}
+
+function downloadPlan(format) {
+  try {
+    const singleTabState = { ...calculatorState, activeTab: "tab-single" };
+    const results = calculateResultsForActiveTab(singleTabState);
+    if (!results || !results.totalSampleSize) {
+      alert("Please configure your experiment settings first.");
+      return;
+    }
+    const planData = generatePlanData(calculatorState, results);
+    const markdownContent = renderPlanAsMarkdown(planData);
+    const dateStr = new Date().toISOString().split("T")[0];
+    const baseName = planData.planName
+      ? planData.planName.replace(/[^a-zA-Z0-9\-_]/g, "-").replace(/-+/g, "-")
+      : "experiment-plan";
+    let content;
+    let filename;
+    let mimeType;
+    if (format === "markdown") {
+      content = markdownContent;
+      filename = `${baseName}-${dateStr}.md`;
+      mimeType = "text/markdown;charset=utf-8;";
+    } else if (format === "text") {
+      content = stripMarkdown(markdownContent);
+      filename = `${baseName}-${dateStr}.txt`;
+      mimeType = "text/plain;charset=utf-8;";
+    }
+    if (content && filename) {
+      downloadFile(content, filename, mimeType);
+      const downloadActionSpan = downloadBtn.querySelector(".download-action");
+      if (downloadActionSpan) {
+        const originalText = downloadActionSpan.textContent;
+        downloadActionSpan.textContent = "Downloaded!";
+        setTimeout(() => {
+          downloadActionSpan.textContent = originalText;
+        }, 2000);
+      }
+    }
+  } catch (error) {
+    console.error("Error generating plan:", error);
+    alert(
+      "An unexpected error occurred while generating the plan. Please check the console for details."
+    );
+  }
+}
+
+function generatePlanData(state, results) {
+  const mdeAbsPoints = state.absoluteMde.toFixed(2);
+  const treatmentCount = state.variants - 1;
+  const variantsText = `${state.variants} (Control + ${treatmentCount} ${
+    treatmentCount === 1 ? "variant" : "variants"
+  })`;
+  const mdeSign = state.absoluteMde > 0 ? "+" : "";
+  let effectSizeLabel = "Effect size to detect";
+  let effectSizeText;
+  switch (state.testType) {
+    case "non-inferiority":
+      effectSizeLabel = "Non-inferiority margin (δ)";
+      effectSizeText = `**${mdeAbsPoints} percentage points**`;
+      break;
+    case "equivalence":
+      effectSizeLabel = "Equivalence margin (±δ)";
+      effectSizeText = `**±${mdeAbsPoints} percentage points**`;
+      break;
+    default:
+      const mdeAbsText = `${mdeSign}${mdeAbsPoints} percentage points`;
+      effectSizeText = state.isRelativeMde
+        ? `**${mdeSign}${state.mde.toFixed(
+            2
+          )}%** (relative, an absolute change of ${mdeAbsText})`
+        : `**${mdeAbsText}**`;
+  }
+  const testTypeInfo = {
+    superiority: {
+      method: "One-tailed Z-test for proportions",
+      null: {
+        text: "The new variant's rate is not better than the baseline's.",
+        formula: `p₂ ≤ p₁`,
+      },
+      alternative: {
+        text: "The new variant's rate is superior to the baseline's.",
+        formula: `p₂ > p₁`,
+      },
+      goal: `To reliably detect an improvement from ${state.baseline.toFixed(
+        2
+      )}% to ${results.targetRate.toFixed(2)}%.`,
+    },
+    "two-tailed": {
+      method: "Two-tailed Z-test for proportions",
+      null: {
+        text: "The new variant's rate is the same as the baseline's.",
+        formula: `p₂ = p₁`,
+      },
+      alternative: {
+        text: "The new variant's rate is different from the baseline's.",
+        formula: `p₂ ≠ p₁`,
+      },
+      goal: `To reliably detect a change from ${state.baseline.toFixed(
+        2
+      )}% to ${results.targetRate.toFixed(2)}%.`,
+    },
+    "non-inferiority": {
+      method: "One-tailed Z-test for proportions (non-inferiority)",
+      null: {
+        text: `The performance loss from the new variant is at least ${mdeAbsPoints} percentage points.`,
+        formula: `p₂ ≤ p₁ - ${mdeAbsPoints}`,
+      },
+      alternative: {
+        text: `The new variant's performance does not fall more than ${mdeAbsPoints} pp below the baseline.`,
+        formula: `p₂ > p₁ - ${mdeAbsPoints}`,
+      },
+      goal: `To determine with confidence that the new variant is not unacceptably worse than the baseline (performance drop is less than ${mdeAbsPoints} pp).`,
+    },
+    equivalence: {
+      method: "Two one-sided tests (TOST) for equivalence",
+      null: {
+        text: `The true difference between the variant and baseline is outside the equivalence margin of ±${mdeAbsPoints} pp.`,
+        formula: `|p₂ - p₁| ≥ ${mdeAbsPoints}`,
+      },
+      alternative: {
+        text: `The new variant is within ${mdeAbsPoints} pp of the baseline's performance.`,
+        formula: `|p₂ - p₁| < ${mdeAbsPoints}`,
+      },
+      goal: `To confirm that the variants perform equivalently, within a margin of ±${mdeAbsPoints} percentage points of the baseline.`,
+    },
+  };
+  const currentTest = testTypeInfo[state.testType];
+  const variantLabels = Array.from({ length: state.variants }, (_, i) =>
+    i === 0 ? "Control" : `Variant ${String.fromCharCode(65 + i)}`
+  );
+  return {
+    planName: state.planName.trim() || null,
+    generatedDate: new Date().toLocaleDateString(),
+    effectSizeLabel: effectSizeLabel,
+    effectSizeText: effectSizeText,
+    totalSample: results.totalSampleSize,
+    duration: results.duration,
+    alpha: state.alpha,
+    power: state.power,
+    statisticalMethod: currentTest.method,
+    testType: formatTestType(state.testType),
+    variantsText: variantsText,
+    goalStatement: currentTest.goal,
+    correction:
+      state.variants > 2
+        ? formatCorrection(state.correctionMethod)
+        : "Not applicable",
+    hypotheses: currentTest,
+    dailyVisitors: state.visitors,
+    trafficFlow: state.trafficFlow,
+    effectiveDailySample: Math.round(
+      state.visitors * (state.trafficFlow / 100)
+    ),
+    trafficDistribution: state.trafficDistribution,
+    buffer: state.buffer,
+    sampleSizeTable: {
+      headers: ["Variant", "Allocation", "Required sample size"],
+      rows: variantLabels.map((label, i) => [
+        label,
+        `${state.trafficDistribution[i]}%`,
+        results.sampleSizePerVariant[i].toLocaleString(),
+      ]),
+      footer: ["Total", "100%", results.totalSampleSize.toLocaleString()],
+    },
+    shareUrl: encodeStateToURL(state),
+  };
+}
+
+function renderPlanAsMarkdown(data) {
+  const sampleTableMarkdown = generateAlignedMarkdownTable(
+    data.sampleSizeTable.headers,
+    data.sampleSizeTable.rows,
+    data.sampleSizeTable.footer
+  );
+  const h0 = data.hypotheses.null;
+  const h1 = data.hypotheses.alternative;
+  const title = data.planName
+    ? `# Experiment plan: ${data.planName} — Generated on ${data.generatedDate}`
+    : `# Experiment plan — Generated on ${data.generatedDate}`;
+  return `${title}
+
+- **Goal**: ${data.goalStatement}
+- **${data.effectSizeLabel}**: ${data.effectSizeText}.
+- **Required sample**: **${data.totalSample.toLocaleString()}** total visitors.
+- **Estimated duration**: ${
+    data.duration < 7
+      ? `**${data.duration} days**`
+      : `**${data.duration} days** (${formatTimeEstimate(data.duration)})`
+  }.
+
+## Hypotheses
+
+- **Null hypothesis (H₀)**: ${h0.text} (${h0.formula})
+- **Alternative hypothesis (H₁)**: ${h1.text} (${h1.formula})
+
+## Experiment design
+
+- **Statistical method**: ${data.statisticalMethod}
+- **Test type**: ${data.testType}
+- **Significance level (α)**: ${data.alpha * 100}%
+- **Statistical power (1-β)**: ${data.power * 100}%
+- **Variants**: ${data.variantsText}
+- **Multiple comparison correction**: ${data.correction}
+
+## Sample size and duration
+
+- **Daily visitors**: ${data.dailyVisitors.toLocaleString()}
+- **Traffic included in test**: ${data.trafficFlow}%
+- **Effective daily sample**: ${data.effectiveDailySample.toLocaleString()} visitors
+- **Traffic allocation**: ${data.trafficDistribution.join("/")}
+
+${sampleTableMarkdown}
+
+- **Sample size buffer**: ${data.buffer}%
+
+---
+
+**[View this interactive plan in the calculator](${data.shareUrl})**`;
+}
+
+function generateAlignedMarkdownTable(headers, rows, footer) {
+  const dataForWidthCalcs = [headers, ...rows, footer];
+  const colWidths = headers.map((_, colIndex) => {
+    return Math.max(
+      ...dataForWidthCalcs.map((row) => (row[colIndex] || "").length)
+    );
+  });
+  const formatRow = (row) => {
+    const paddedCells = row.map((cell, index) =>
+      (cell || "").padEnd(colWidths[index])
+    );
+    return `| ${paddedCells.join(" | ")} |`;
+  };
+  const headerRow = formatRow(headers);
+  const separator = `| ${colWidths.map((w) => "-".repeat(w)).join(" | ")} |`;
+  const dataRows = rows.map((row) => formatRow(row)).join("\n");
+  const footerCells = footer.map((cell, index) => {
+    const boldedCell = `**${cell}**`;
+    const paddingWidth = colWidths[index] + 4;
+    return boldedCell.padEnd(paddingWidth);
+  });
+  const footerRow = `| ${footerCells.join(" | ")} |`;
+  return `${headerRow}\n${separator}\n${dataRows}\n${footerRow}`;
+}
+
+function stripMarkdown(markdownText) {
+  return markdownText
+    .replace(/^#+\s*/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2");
 }
 
 function getModificationDescription(key, currentValue) {

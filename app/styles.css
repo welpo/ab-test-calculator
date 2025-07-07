@@ -988,12 +988,130 @@ select.input-field {
 }
 
 /* ========== SHARE CARD STYLES ========== */
+.dropdown {
+    display: inline-block;
+    position: relative;
+}
+
+.action-buttons-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.share-button,
+.download-plan-button {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0.5rem;
+    overflow: hidden;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: var(--font-size-md);
+    text-decoration: none;
+}
+
+.share-button::after,
+.download-plan-button::after {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s ease;
+    background-color: var(--accent);
+    width: 100%;
+    height: 2px;
+    content: '';
+}
+
+.share-button:hover::after,
+.download-plan-button:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+.share-button svg,
+.download-plan-button svg {
+    transition: transform 0.3s;
+}
+
+.share-button:hover #link {
+    transform: rotate(-45deg);
+}
+
+.download-action {
+    padding: 0;
+    white-space: nowrap;
+}
+
+.download-trigger {
+    transform: translateY(-1px);
+    margin-left: 4px;
+    padding: 0;
+}
+
+.download-plan-button svg.download-arrow {
+    display: inline-block;
+    vertical-align: middle;
+    width: 12px;
+    height: 12px;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 10;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg);
+    padding: 2px;
+    min-width: 180px;
+}
+
+.dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: none;
+    border-radius: var(--border-radius);
+    background: none;
+    padding: 0.6rem 1rem;
+    width: 100%;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background-color: var(--color-bg-light);
+}
+
+.download-arrow {
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+/* ========== SHARE CARD STYLES ========== */
 .share-card {
     display: flex;
     flex-direction: column;
     align-items: center;
     margin: 0 auto;
-    max-width: 320px;
+    max-width: 350px;
     text-align: center;
 }
 
@@ -1695,6 +1813,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (max-width: 768px) {
+
     #tab-table-content .chart-container,
     #tab-time-content .chart-container {
         margin: var(--spacing-xs) 0;
@@ -1963,6 +2082,22 @@ input[type="range"]::-moz-range-thumb {
         position: static;
     }
 
+    .action-buttons-container {
+        gap: var(--spacing-md);
+    }
+
+    .share-button,
+    .download-plan-button {
+        gap: 6px;
+        padding: 0.4rem;
+        font-size: var(--font-size-base);
+    }
+
+    .plan-name-input {
+        padding: 0.4rem 0.6rem;
+        font-size: var(--font-size-xs);
+    }
+
     .plan-name-container {
         margin-top: var(--spacing-sm);
         max-width: 100%;
@@ -2126,6 +2261,3 @@ input[type="range"]::-moz-range-thumb {
         display: none;
     }
 }
-
-
-@media (max-width: 649px) {}

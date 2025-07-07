@@ -34,7 +34,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=03d9582c">
+    <link rel="stylesheet" href="styles.css?h=825c4a53">
 </head>
 
 <body>
@@ -289,13 +289,31 @@
                     maxlength="100"
                     aria-label="Plan name">
 
-                <button id="sharePlan" class="share-button">
-                    <svg id="link" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                    </svg>
-                    Share plan
-                </button>
+                <div class="action-buttons-container">
+                    <button id="sharePlan" class="share-button">
+                        <svg id="link" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                        Share plan
+                    </button>
+                    <div class="download-plan-section" id="download-plan-section">
+                        <div class="dropdown">
+                            <button class="download-plan-button" id="downloadPlanBtn">
+                                <span class="download-action" data-format="text">Download as .txt</span>
+                                <span class="download-trigger">
+                                    <svg class="download-arrow" viewBox="0 0 12 12" fill="none">
+                                        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    </svg>
+                                </span>
+                            </button>
+                            <div class="dropdown-menu" id="downloadPlanMenu">
+                                <button class="dropdown-item" data-format="markdown">Markdown (.md)</button>
+                                <button class="dropdown-item" data-format="text">Plain text (.txt)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -623,7 +641,7 @@
 </footer>
 </div>
 
-<script defer type="module" src="app.js?h=7647414e"></script>
+<script defer type="module" src="app.js?h=c5c3f2ff"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>
