@@ -29,6 +29,9 @@ APP_FILES_TO_CACHEBUST=(
     "app.js"
     "styles.css"
     "noscript.css"
+    "sw-registration.js"
+    "manifest.json"
+    "statistics.js"
 )
 
 # Check if oxipng is installed.
@@ -75,6 +78,14 @@ for file in "${all_changed_files[@]}"; do
         base_name=$(basename "$file")
         perl -pi -e "s|${base_name}?[^\"]*\"|${base_name}?h=${new_hash}\"|g; s|${base_name}\"|${base_name}?h=${new_hash}\"|g" "app/index.html"
         git add "app/index.html"
+
+        # Update service worker cache list with versioned URLs.
+        if [[ "$base_name" == "app.js" || "$base_name" == "styles.css" || "$base_name" == "noscript.css" || "$base_name" == "statistics.js" || "$base_name" == "manifest.json" ]]; then
+            perl -pi -e "s|\"/${base_name}(?:\\?[^\"]*)?\"|\"/\\${base_name}?h=${new_hash}\"|g" "app/sw.js"
+            git add "app/sw.js"
+            echo "Updated sw.js cache for $base_name with hash $new_hash"
+        fi
+
         echo "Updated cache bust hash for $file to $new_hash"
     fi
 done

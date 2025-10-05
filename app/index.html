@@ -15,10 +15,19 @@
     <link rel="shortcut icon" href="/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json?h=2efffed0">
+
     <!-- Colours -->
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#4a5568">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#334652">
+
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="A/B Calc">
 
     <!-- CSP -->
     <meta http-equiv="Content-Security-Policy" content="
@@ -641,6 +650,7 @@
 </footer>
 </div>
 
+<script defer src="sw-registration.js?h=6497cb14"></script>
 <script defer type="module" src="app.js?h=c5c3f2ff"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
