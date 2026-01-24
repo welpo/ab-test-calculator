@@ -34,6 +34,11 @@ APP_FILES_TO_CACHEBUST=(
     "statistics.js"
 )
 
+# Files imported by app.js
+APP_JS_IMPORTS=(
+    "statistics.js"
+)
+
 # Check if oxipng is installed.
 png_compressor=""
 if command -v oxipng &> /dev/null; then
@@ -80,10 +85,15 @@ for file in "${all_changed_files[@]}"; do
         git add "app/index.html"
 
         # Update service worker cache list with versioned URLs.
-        if [[ "$base_name" == "app.js" || "$base_name" == "styles.css" || "$base_name" == "noscript.css" || "$base_name" == "statistics.js" || "$base_name" == "manifest.json" ]]; then
-            perl -pi -e "s|\"/${base_name}(?:\\?[^\"]*)?\"|\"/\\${base_name}?h=${new_hash}\"|g" "app/sw.js"
-            git add "app/sw.js"
-            echo "Updated sw.js cache for $base_name with hash $new_hash"
+        perl -pi -e "s|\"/${base_name}(?:\\?[^\"]*)?\"|\"/\\${base_name}?h=${new_hash}\"|g" "app/sw.js"
+        git add "app/sw.js"
+        echo "Updated sw.js cache for $base_name with hash $new_hash"
+
+        # Update import in app.js for files it imports.
+        if [[ " ${APP_JS_IMPORTS[*]} " =~ " ${base_name} " ]]; then
+            perl -pi -e "s|from \"./${base_name}(?:\\?[^\"]*)?\"|from \"./${base_name}?h=${new_hash}\"|g" "app/app.js"
+            git add "app/app.js"
+            echo "Updated app.js import for $base_name with hash $new_hash"
         fi
 
         echo "Updated cache bust hash for $file to $new_hash"

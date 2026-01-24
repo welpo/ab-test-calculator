@@ -3,7 +3,7 @@ import {
   calculateExperimentSize,
   calculateMDE,
   calculateMDEFromSampleSize,
-} from "./statistics.js";
+} from "./statistics.js?h=cd7372e7";
 
 const CSVPREFIX = "calculator.osc.garden";
 const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
