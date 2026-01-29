@@ -24,7 +24,7 @@
 
     /* Sizing variables */
     --border-radius: 5px;
-    --container-width: 650px;
+    --container-width: 700px;
     --spacing-xs: 0.5rem;
     --spacing-sm: 0.8rem;
     --spacing-md: 1.2rem;
@@ -270,13 +270,13 @@ header {
 }
 
 .icon {
-    width: 20px;
-    height: 20px;
+    fill: none;
     stroke: currentColor;
-    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
-    fill: none;
+    stroke-width: 2;
+    width: 20px;
+    height: 20px;
 }
 
 .advanced-header {
@@ -469,6 +469,35 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     margin-bottom: var(--spacing-md);
 }
 
+/* ========== TOP / BOTTOM ROW LAYOUT ========== */
+.top-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.top-row .input-col {
+    flex: 1;
+}
+
+.input-col-pair {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.input-col-pair .input-group {
+    flex: 1;
+}
+
+.bottom-row {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.bottom-row .input-group {
+    flex: 1;
+}
+
 /* ========== INPUT GROUPS ========== */
 .input-group {
     margin-bottom: var(--spacing-xs);
@@ -567,6 +596,69 @@ a.external:not(:has(img, svg, video, picture, figure))::after {
     margin: 0;
 }
 
+/* ========== METRIC TYPE TOGGLE ========== */
+.metric-toggle {
+    display: flex;
+    position: relative;
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-light);
+    padding: 3px;
+}
+
+.metric-toggle-btn {
+    display: flex;
+    position: relative;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+    transition: color 0.25s;
+    cursor: pointer;
+    border: none;
+    border-radius: calc(var(--border-radius) - 2px);
+    background: transparent;
+    padding: 0.5rem 1rem;
+    color: var(--color-text-light);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+}
+
+.metric-toggle-btn:hover:not(.active) {
+    color: var(--color-text);
+}
+
+.metric-toggle-btn.active {
+    color: var(--color-text);
+}
+
+.metric-toggle-btn::before {
+    position: absolute;
+    opacity: 0;
+    z-index: -1;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    inset: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: inherit;
+    background: var(--color-bg);
+    pointer-events: none;
+    content: "";
+}
+
+.metric-toggle-btn.active::before {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.metric-toggle-btn:first-child:not(.active)::before {
+    transform: translateX(50%);
+}
+
+.metric-toggle-btn:last-child:not(.active)::before {
+    transform: translateX(-50%);
+}
 
 /* ========== SELECT STYLING ========== */
 .select-wrapper {
@@ -819,10 +911,10 @@ select.input-field {
 }
 
 .tips-icon {
+    flex-shrink: 0;
+    fill: var(--color-tips-icon);
     width: 20px;
     height: 20px;
-    fill: var(--color-tips-icon);
-    flex-shrink: 0;
 }
 
 .tips-title {
@@ -1185,6 +1277,18 @@ select.input-field {
 
 .share-button:hover #link {
     transform: rotate(-45deg);
+}
+
+.share-button:disabled,
+.download-plan-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.share-button:disabled::after,
+.download-plan-button:disabled::after {
+    display: none;
 }
 
 /* ========== HIDDEN SECTIONS ========== */
@@ -1742,10 +1846,10 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .comparison-icon {
+    flex-shrink: 0;
+    fill: var(--accent);
     width: 20px;
     height: 20px;
-    fill: var(--accent);
-    flex-shrink: 0;
 }
 
 .comparison-title {
@@ -1813,6 +1917,18 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (max-width: 768px) {
+
+    .top-row {
+        flex-direction: column;
+    }
+
+    .input-col-pair {
+        flex-direction: column;
+    }
+
+    .bottom-row {
+        flex-direction: column;
+    }
 
     #tab-table-content .chart-container,
     #tab-time-content .chart-container {
@@ -2115,6 +2231,18 @@ input[type="range"]::-moz-range-thumb {
 
     .inputs-grid {
         grid-template-columns: 1fr;
+    }
+
+    .top-row {
+        flex-direction: column;
+    }
+
+    .input-col-pair {
+        flex-direction: column;
+    }
+
+    .bottom-row {
+        flex-direction: column;
     }
 
     .config-grid {

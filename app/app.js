@@ -3,7 +3,7 @@ import {
   calculateExperimentSize,
   calculateMDE,
   calculateMDEFromSampleSize,
-} from "./statistics.js?h=cd7372e7";
+} from "./statistics.js?h=b0942d7a";
 
 const CSVPREFIX = "calculator.osc.garden";
 const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
@@ -66,15 +66,21 @@ const timeTableColumnConfig = [
 ];
 
 const calculatorState = {
+  /** Metric type: "binary" for conversion rates, "continuous" for means. */
+  metricType: "binary",
   /** Daily visitors to the page being tested. */
   visitors: 1000,
   /** Baseline conversion rate (as a percentage, e.g. 5 for 5%). */
   baseline: 5,
-  /** Minimum Detectable Effect (or Improvement/Margin, etc.). */
+  /** Baseline mean value for continuous metrics. */
+  baselineMean: 50,
+  /** Standard deviation for continuous metrics. */
+  standardDeviation: 25,
+  /** Minimum Detectable Effect (or mean difference for continuous). */
   mde: DEFAULT_MDE,
-  /** True if MDE is relative (%), false if absolute (points). */
+  /** True if MDE is relative (%), false if absolute. */
   isRelativeMde: true,
-  /** Computed absolute MDE value in points. */
+  /** Computed absolute MDE value. */
   absoluteMde: 0,
   /** Total number of variants in the test, including control. */
   variants: 2,
@@ -112,10 +118,21 @@ const calculatorState = {
   planName: "",
 };
 
+// Metric type toggle.
+const metricBinaryBtn = document.getElementById("metricBinary");
+const metricContinuousBtn = document.getElementById("metricContinuous");
+
 // Basic inputs.
 const visitorsInput = document.getElementById("visitors");
 const baselineInput = document.getElementById("baseline");
+const baselineGroup = document.getElementById("baselineGroup");
+const continuousMetricRow = document.getElementById("continuousMetricRow");
+const baselineMeanInput = document.getElementById("baselineMean");
+const stdDevInput = document.getElementById("stdDev");
 const mdeInput = document.getElementById("mde");
+const mdeLabel = document.getElementById("mdeLabel");
+const mdeTooltip = document.getElementById("mdeTooltip");
+const mdeTypeToggle = document.getElementById("mdeTypeToggle");
 const variantsSelect = document.getElementById("variants");
 const relativeMode = document.getElementById("relativeMode");
 const absoluteMode = document.getElementById("absoluteMode");
@@ -147,7 +164,7 @@ const bufferInput = document.getElementById("buffer");
 const bufferRangeInput = document.getElementById("bufferRange");
 const resetDistributionBtn = document.getElementById("resetDistributionBtn");
 const variantDistributionContainer = document.getElementById(
-  "variantDistributionContainer"
+  "variantDistributionContainer",
 );
 
 // Errors.
@@ -178,12 +195,12 @@ const toggleTimeChartBtn = document.getElementById("toggleTimeChartBtn");
 const mdeChartContainer = document.getElementById("mdeChartContainer");
 const timeChartContainer = document.getElementById("timeChartContainer");
 const optimalDistributionBtn = document.getElementById(
-  "optimalDistributionBtn"
+  "optimalDistributionBtn",
 );
 const downloadBtn = document.getElementById("downloadPlanBtn");
 const downloadMenu = document.getElementById("downloadPlanMenu");
 let downloadActionSpan = document.querySelector(
-  "#downloadPlanBtn .download-action"
+  "#downloadPlanBtn .download-action",
 );
 const shareButton = document.getElementById("sharePlan");
 const downloadCSVBtn = document.getElementById("downloadCSVBtn");
@@ -197,6 +214,7 @@ function initializeUI() {
   loadPersistentSettings();
   decodeStateFromURL();
   syncChartVisibilityUI();
+  updateMetricTypeUI();
   setupEventListeners();
   runUpdateCycle();
 }
@@ -215,6 +233,25 @@ function syncChartVisibilityUI() {
   } else {
     timeChartContainer.classList.add("hidden");
     toggleTimeChartBtn.textContent = "Show chart";
+  }
+}
+
+function updateMetricTypeUI() {
+  const isBinary = calculatorState.metricType === "binary";
+  metricBinaryBtn.classList.toggle("active", isBinary);
+  metricBinaryBtn.setAttribute("aria-pressed", isBinary);
+  metricContinuousBtn.classList.toggle("active", !isBinary);
+  metricContinuousBtn.setAttribute("aria-pressed", !isBinary);
+  baselineGroup.classList.toggle("hidden", !isBinary);
+  continuousMetricRow.classList.toggle("hidden", isBinary);
+  if (isBinary) {
+    mdeLabel.textContent = "Effect to detect";
+    mdeTooltip.textContent =
+      "The smallest improvement you want to detect. Detecting smaller changes requires more data.";
+  } else {
+    mdeLabel.textContent = "Effect to detect";
+    mdeTooltip.textContent =
+      "The smallest difference in means you want to detect. Use the same unit as your baseline mean.";
   }
 }
 
@@ -272,6 +309,8 @@ function decodeStateFromURL() {
   updateState("name", "planName", (val) => val); // String, no parsing
   updateState("vs", "visitors");
   updateState("bl", "baseline");
+  updateState("bm", "baselineMean");
+  updateState("sd", "standardDeviation");
   updateState("mde", "mde");
   updateState("tf", "trafficFlow");
   updateState("bf", "buffer");
@@ -279,6 +318,12 @@ function decodeStateFromURL() {
   updateState("pw", "power");
   updateState("var", "variants", parseInt);
   // Booleans and special values.
+  if (urlParams.has("mt")) {
+    const mt = urlParams.get("mt");
+    if (mt === "binary" || mt === "continuous") {
+      calculatorState.metricType = mt;
+    }
+  }
   if (urlParams.has("rel")) {
     calculatorState.isRelativeMde = urlParams.get("rel") === "1";
   }
@@ -366,7 +411,7 @@ function setupEventListeners() {
   const addDebouncedListener = (element, stateKey, isNumeric = true) => {
     element.addEventListener("input", (e) => {
       calculatorState[stateKey] = isNumeric
-        ? parseFloat(e.target.value) || 0
+        ? parseFloat(e.target.value)
         : e.target.value;
       debouncedUpdate();
     });
@@ -381,9 +426,23 @@ function setupEventListeners() {
     rangeInput.addEventListener("input", listener);
   };
 
+  // Metric type toggle.
+  metricBinaryBtn.addEventListener("click", () => {
+    calculatorState.metricType = "binary";
+    updateMetricTypeUI();
+    runUpdateCycle();
+  });
+  metricContinuousBtn.addEventListener("click", () => {
+    calculatorState.metricType = "continuous";
+    updateMetricTypeUI();
+    runUpdateCycle();
+  });
+
   // Basic inputs.
   addDebouncedListener(visitorsInput, "visitors");
   addDebouncedListener(baselineInput, "baseline");
+  addDebouncedListener(baselineMeanInput, "baselineMean");
+  addDebouncedListener(stdDevInput, "standardDeviation");
   addDebouncedListener(mdeInput, "mde");
   addDebouncedListener(planNameInput, "planName", false);
 
@@ -557,10 +616,10 @@ function setupEventListeners() {
   setupTableDelegation(timeTable, "timeTableRows", "time-input");
 
   downloadCSVBtn.addEventListener("click", () =>
-    downloadTableAsCSV("mdeTable")
+    downloadTableAsCSV("mdeTable"),
   );
   downloadTimeCSVBtn.addEventListener("click", () =>
-    downloadTableAsCSV("timeTable")
+    downloadTableAsCSV("timeTable"),
   );
   shareButton.addEventListener("click", handleShareButtonClick);
 
@@ -571,7 +630,7 @@ function setupEventListeners() {
       const newDistribution = calculateNewDistribution(
         calculatorState.trafficDistribution,
         changedIndex,
-        newValue
+        newValue,
       );
       calculatorState.trafficDistribution = newDistribution;
       calculatorState.hasCustomTrafficDistribution = true;
@@ -672,7 +731,9 @@ function updateDownloadButtonUI() {
 }
 
 function computeAbsoluteMde(state) {
-  return state.isRelativeMde ? state.baseline * (state.mde / 100) : state.mde;
+  const baseValue =
+    state.metricType === "binary" ? state.baseline : state.baselineMean;
+  return state.isRelativeMde ? baseValue * (state.mde / 100) : state.mde;
 }
 
 function validateInputs(state) {
@@ -682,16 +743,12 @@ function validateInputs(state) {
 }
 
 function getBasicInputErrors(state) {
+  const isBinary = state.metricType === "binary";
   const validationConfig = [
     {
       key: "visitors",
       label: "Daily visitors",
       rules: { min: 0, max: Infinity, excludeMin: true },
-    },
-    {
-      key: "baseline",
-      label: "Baseline CR",
-      rules: { min: 0, max: 100, excludeMin: true, excludeMax: true },
     },
     {
       key: "alpha",
@@ -710,6 +767,24 @@ function getBasicInputErrors(state) {
     },
     { key: "buffer", label: "Buffer", rules: { min: 0, max: Infinity } },
   ];
+  if (isBinary) {
+    validationConfig.push({
+      key: "baseline",
+      label: "Baseline CR",
+      rules: { min: 0, max: 100, excludeMin: true, excludeMax: true },
+    });
+  } else {
+    validationConfig.push({
+      key: "baselineMean",
+      label: "Baseline mean",
+      rules: { min: -Infinity, max: Infinity },
+    });
+    validationConfig.push({
+      key: "standardDeviation",
+      label: "Standard deviation",
+      rules: { min: 0, max: Infinity, excludeMin: true },
+    });
+  }
   return validationConfig.reduce((errors, config) => {
     const value = state[config.key];
     if (isNaN(value) || value === null) {
@@ -760,6 +835,7 @@ function getMdeErrors(state) {
 }
 
 function getSuperiorityMdeErrors(state) {
+  if (state.metricType === "continuous") return [];
   const { mde, baseline, absoluteMde } = state;
   const targetRate = calculateTargetRate(baseline, absoluteMde);
   if (mde > 0 && targetRate >= 100) {
@@ -767,7 +843,7 @@ function getSuperiorityMdeErrors(state) {
       {
         key: "mde",
         message: `An improvement results in an invalid rate of ${targetRate.toFixed(
-          2
+          2,
         )}%.`,
       },
     ];
@@ -777,7 +853,7 @@ function getSuperiorityMdeErrors(state) {
       {
         key: "mde",
         message: `A reduction results in an invalid rate of ${targetRate.toFixed(
-          2
+          2,
         )}%.`,
       },
     ];
@@ -786,19 +862,21 @@ function getSuperiorityMdeErrors(state) {
 }
 
 function getTwoTailedMdeErrors(state, mdeLabel) {
-  const { mde, baseline, absoluteMde } = state;
-  const errors = [];
+  const { mde } = state;
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
+  if (state.metricType === "continuous") return [];
+  const { baseline, absoluteMde } = state;
+  const errors = [];
   const upperBound = calculateTargetRate(baseline, absoluteMde);
   if (upperBound >= 100) {
     errors.push({
       key: "mde",
       message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
-        2
+        2,
       )}%`,
     });
   }
@@ -807,7 +885,7 @@ function getTwoTailedMdeErrors(state, mdeLabel) {
     errors.push({
       key: "mde",
       message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
-        2
+        2,
       )}%`,
     });
   }
@@ -815,19 +893,21 @@ function getTwoTailedMdeErrors(state, mdeLabel) {
 }
 
 function getNonInferiorityMdeErrors(state, mdeLabel) {
-  const { mde, baseline, absoluteMde } = state;
+  const { mde } = state;
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
+  if (state.metricType === "continuous") return [];
+  const { baseline, absoluteMde } = state;
   const lowerBound = calculateTargetRate(baseline, -absoluteMde);
   if (lowerBound <= 0) {
     return [
       {
         key: "mde",
         message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
-          2
+          2,
         )}%`,
       },
     ];
@@ -836,19 +916,21 @@ function getNonInferiorityMdeErrors(state, mdeLabel) {
 }
 
 function getEquivalenceMdeErrors(state, mdeLabel) {
-  const { mde, baseline, absoluteMde } = state;
-  const errors = [];
+  const { mde } = state;
   if (mde < 0) {
     return [
       { key: "mde", message: `"${mdeLabel}" must be a positive number.` },
     ];
   }
+  if (state.metricType === "continuous") return [];
+  const { baseline, absoluteMde } = state;
+  const errors = [];
   const upperBound = calculateTargetRate(baseline, absoluteMde);
   if (upperBound >= 100) {
     errors.push({
       key: "mde",
       message: `This "${mdeLabel}" results in an invalid upper bound of ${upperBound.toFixed(
-        2
+        2,
       )}%`,
     });
   }
@@ -857,7 +939,7 @@ function getEquivalenceMdeErrors(state, mdeLabel) {
     errors.push({
       key: "mde",
       message: `This "${mdeLabel}" results in an invalid lower bound of ${lowerBound.toFixed(
-        2
+        2,
       )}%`,
     });
   }
@@ -883,14 +965,14 @@ function calculateResultsForActiveTab(state) {
       case "tab-table":
         return {
           mdeTableData: state.mdeTableRows.map((mdeValue) =>
-            getSampleSizeAndDurationForMde(mdeValue, state)
+            getSampleSizeAndDurationForMde(mdeValue, state),
           ),
         };
 
       case "tab-time":
         return {
           timeTableData: state.timeTableRows.map((dayValue) =>
-            calculateTimeRowResult(dayValue, state)
+            calculateTimeRowResult(dayValue, state),
           ),
         };
     }
@@ -902,13 +984,12 @@ function calculateResultsForActiveTab(state) {
 }
 
 function getSampleSizeAndDurationForMde(mdeValue, state) {
+  const isBinary = state.metricType === "binary";
+  const baseValue = isBinary ? state.baseline : state.baselineMean;
   const absoluteMde = state.isRelativeMde
-    ? state.baseline * (mdeValue / 100)
+    ? baseValue * (mdeValue / 100)
     : mdeValue;
-  const mdeInfo = calculateMDE(state.baseline, absoluteMde, state.testType);
-  const experimentSize = calculateExperimentSize({
-    baseline: state.baseline / 100,
-    absoluteMde: absoluteMde,
+  const experimentConfig = {
     alpha: state.alpha,
     power: state.power,
     variantCount: state.variants,
@@ -916,19 +997,38 @@ function getSampleSizeAndDurationForMde(mdeValue, state) {
     testType: state.testType,
     correctionMethod: state.correctionMethod,
     trafficDistribution: getTrafficDistributionAsDecimals(calculatorState),
-  });
+  };
+  if (isBinary) {
+    experimentConfig.baseline = state.baseline / 100;
+    experimentConfig.absoluteMde = absoluteMde;
+  } else {
+    experimentConfig.metricType = "continuous";
+    experimentConfig.baselineMean = state.baselineMean;
+    experimentConfig.standardDeviation = state.standardDeviation;
+    experimentConfig.meanDifference = absoluteMde;
+  }
+  const experimentSize = calculateExperimentSize(experimentConfig);
   const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
   const lowestPercentage = Math.min(...state.trafficDistribution) / 100;
   const lowestVariantDailyVisitors = effectiveVisitors * lowestPercentage;
-  // The smallest variant's sample size determines duration.
   const smallestSampleSize = Math.min(...experimentSize.sampleSizePerGroup);
   const durationDays =
     lowestVariantDailyVisitors > 0
       ? Math.ceil(smallestSampleSize / lowestVariantDailyVisitors)
       : 0;
+  if (isBinary) {
+    const mdeInfo = calculateMDE(state.baseline, absoluteMde, state.testType);
+    return {
+      baseline: state.baseline,
+      targetRate: mdeInfo.targetRate * 100,
+      sampleSizePerGroup: experimentSize.sampleSizePerGroup,
+      totalSampleSize: experimentSize.totalSampleSize,
+      durationDays,
+    };
+  }
   return {
-    baseline: state.baseline,
-    targetRate: mdeInfo.targetRate * 100,
+    baselineMean: state.baselineMean,
+    targetMean: state.baselineMean + absoluteMde,
     sampleSizePerGroup: experimentSize.sampleSizePerGroup,
     totalSampleSize: experimentSize.totalSampleSize,
     durationDays,
@@ -940,10 +1040,11 @@ function getTrafficDistributionAsDecimals(state) {
 }
 
 function calculateTimeRowResult(days, state) {
+  const isBinary = state.metricType === "binary";
   const effectiveVisitors = state.visitors * (state.trafficFlow / 100);
   const totalSampleSize = Math.ceil(days * effectiveVisitors);
-  const mde = calculateMDEFromSampleSize(totalSampleSize, {
-    baseline: state.baseline,
+  const baseValue = isBinary ? state.baseline : state.baselineMean;
+  const mdeConfig = {
     alpha: state.alpha,
     power: state.power,
     variantCount: state.variants,
@@ -951,14 +1052,28 @@ function calculateTimeRowResult(days, state) {
     testType: state.testType,
     correctionMethod: state.correctionMethod,
     trafficDistribution: getTrafficDistributionAsDecimals(state),
-  });
-  const absoluteMde = mde;
-  const displayMde = state.isRelativeMde ? (mde / state.baseline) * 100 : mde;
-  const mdeInfo = calculateMDE(state.baseline, absoluteMde, state.testType);
-  const targetRate = mdeInfo.targetRate * 100;
+  };
+  if (isBinary) {
+    mdeConfig.baseline = state.baseline;
+  } else {
+    mdeConfig.metricType = "continuous";
+    mdeConfig.standardDeviation = state.standardDeviation;
+  }
+  const mde = calculateMDEFromSampleSize(totalSampleSize, mdeConfig);
+  const displayMde = state.isRelativeMde ? (mde / baseValue) * 100 : mde;
+  if (isBinary) {
+    const mdeInfo = calculateMDE(state.baseline, mde, state.testType);
+    return {
+      baseline: state.baseline,
+      targetRate: mdeInfo.targetRate * 100,
+      mde: displayMde,
+      isRelative: state.isRelativeMde,
+      totalSampleSize,
+    };
+  }
   return {
-    baseline: state.baseline,
-    targetRate,
+    baselineMean: state.baselineMean,
+    targetMean: state.baselineMean + mde,
     mde: displayMde,
     isRelative: state.isRelativeMde,
     totalSampleSize,
@@ -988,6 +1103,8 @@ function renderFormInputs(state) {
   // Basic inputs.
   updateInputValue(visitorsInput, state.visitors);
   updateInputValue(baselineInput, state.baseline);
+  updateInputValue(baselineMeanInput, state.baselineMean);
+  updateInputValue(stdDevInput, state.standardDeviation);
   updateInputValue(mdeInput, state.mde);
   variantsSelect.value = state.variants;
   updateInputValue(planNameInput, state.planName);
@@ -996,7 +1113,7 @@ function renderFormInputs(state) {
 
   // Advanced settings.
   document.querySelector(
-    `input[name="testType"][value="${state.testType}"]`
+    `input[name="testType"][value="${state.testType}"]`,
   ).checked = true;
   correctionSelect.value = state.correctionMethod;
   updateInputValue(alphaInput, state.alpha);
@@ -1012,29 +1129,37 @@ function renderFormInputs(state) {
 function renderDynamicText(state) {
   // Update the main MDE label based on test type and mode.
   const mdeLabels = getLabelsForTestType(state.testType);
-  const mdeModeUnit = state.isRelativeMde ? "(%)" : "(points)";
+  const isBinaryForUnit = state.metricType === "binary";
+  const absoluteUnitLabel = isBinaryForUnit ? "(points)" : "";
+  const mdeModeUnit = state.isRelativeMde ? "(%)" : absoluteUnitLabel;
+  document.querySelector('label[for="mde"]').textContent =
+    `${mdeLabels.label} ${mdeModeUnit}`.trim();
   document.querySelector(
-    'label[for="mde"]'
-  ).textContent = `${mdeLabels.label} ${mdeModeUnit}`;
-  document.querySelector(
-    'label[for="mde"] + .tooltip-trigger .tooltip'
+    'label[for="mde"] + .tooltip-trigger .tooltip',
   ).textContent = mdeLabels.tooltip;
   // Update the tooltips for the relative/absolute mode selectors.
-  const relativeTooltipText = `'${state.mde}%' means going from ${
-    state.baseline
-  }% to ${(state.baseline + state.absoluteMde).toFixed(2)}% conversion rate`;
-  const absoluteTooltipText = `'${state.mde} points' means going from ${
-    state.baseline
-  }% to ${(state.baseline + state.absoluteMde).toFixed(2)}% conversion rate`;
+  const isBinary = state.metricType === "binary";
+  const baseValue = isBinary ? state.baseline : state.baselineMean;
+  const relativeTarget = baseValue + baseValue * (state.mde / 100);
+  const absoluteTarget = baseValue + state.mde;
+  const fmt = (n) => parseFloat(n.toFixed(2)).toString();
+  const relativeTooltipText = isBinary
+    ? `'${fmt(state.mde)}%' means going from ${fmt(baseValue)}% to ${fmt(relativeTarget)}%`
+    : `'${fmt(state.mde)}%' means going from ${fmt(baseValue)} to ${fmt(relativeTarget)}`;
+  const absoluteTooltipText = isBinary
+    ? `'${fmt(state.mde)} points' means going from ${fmt(baseValue)}% to ${fmt(absoluteTarget)}%`
+    : `'${fmt(state.mde)}' means going from ${fmt(baseValue)} to ${fmt(absoluteTarget)}`;
   document.querySelector(
-    'label[for="relativeMode"] .tooltip, #relativeMode ~ .tooltip-trigger .tooltip'
+    'label[for="relativeMode"] .tooltip, #relativeMode ~ .tooltip-trigger .tooltip',
   ).textContent = relativeTooltipText;
   document.querySelector(
-    'label[for="absoluteMode"] .tooltip, #absoluteMode ~ .tooltip-trigger .tooltip'
+    'label[for="absoluteMode"] .tooltip, #absoluteMode ~ .tooltip-trigger .tooltip',
   ).textContent = absoluteTooltipText;
   // Update the header of the MDE table.
+  const isBinaryForHeader = state.metricType === "binary";
+  const absoluteUnit = isBinaryForHeader ? "Δ (points)" : "Δ";
   document.querySelector("#mdeTable th:first-child").innerHTML =
-    state.isRelativeMde ? "Δ (%)" : "Δ (points)";
+    state.isRelativeMde ? "Δ (%)" : absoluteUnit;
 }
 
 function renderAdvancedStatus(state) {
@@ -1043,7 +1168,7 @@ function renderAdvancedStatus(state) {
     .map(([key]) => getModificationDescription(key, state[key]));
   const trafficModification = !isEqualDistribution(
     state.trafficDistribution,
-    state.variants
+    state.variants,
   )
     ? [`Traffic distribution: ${state.trafficDistribution.join("/")}`]
     : [];
@@ -1089,7 +1214,7 @@ function renderSingleEstimateResults(state, results, errors) {
             <span class="variant-label">${variantLabels[i]}</span>
             <span class="variant-value">${size.toLocaleString()}</span>
           </div>
-        `
+        `,
         )
         .join("");
       sampleValueElem.innerHTML = `<div class="stacked-variants">${stackedRowsHTML}</div>`;
@@ -1099,7 +1224,7 @@ function renderSingleEstimateResults(state, results, errors) {
     explanationElem.innerHTML = getTestTypeExplanation(
       state,
       results,
-      state.absoluteMde
+      state.absoluteMde,
     );
     updateChartVisualization(state);
   } else {
@@ -1149,6 +1274,8 @@ function renderValidationErrors(errors) {
   const elementMap = {
     visitors: visitorsInput,
     baseline: baselineInput,
+    baselineMean: baselineMeanInput,
+    standardDeviation: stdDevInput,
     mde: mdeInput,
     alpha: alphaInput,
     power: powerInput,
@@ -1156,10 +1283,32 @@ function renderValidationErrors(errors) {
     buffer: bufferInput,
   };
   Object.values(elementMap).forEach(
-    (el) => el && el.classList.remove("input-error")
+    (el) => el && el.classList.remove("input-error"),
   );
   errorList.innerHTML = "";
   const hasErrors = errors && errors.length > 0;
+  shareButton.disabled = hasErrors;
+  downloadBtn.disabled = hasErrors;
+  if (hasErrors) {
+    shareButton.setAttribute(
+      "aria-label",
+      "Share plan (disabled: fix errors first)",
+    );
+    shareButton.setAttribute("title", "Fix validation errors before sharing");
+    downloadBtn.setAttribute(
+      "aria-label",
+      "Download plan (disabled: fix errors first)",
+    );
+    downloadBtn.setAttribute(
+      "title",
+      "Fix validation errors before downloading",
+    );
+  } else {
+    shareButton.setAttribute("aria-label", "Share plan");
+    shareButton.setAttribute("title", "Share plan");
+    downloadBtn.setAttribute("aria-label", "Download plan");
+    downloadBtn.setAttribute("title", "Download plan");
+  }
   errorContainer.classList.toggle("hidden", !hasErrors);
   if (hasErrors) {
     errors.forEach((error) => {
@@ -1249,7 +1398,7 @@ function calculateNewDistribution(currentDistribution, changedIndex, newValue) {
   const maxAllowed = 100 - minRequiredForOthers;
   newDist[changedIndex] = Math.max(1, Math.min(newValue, maxAllowed));
   const otherIndices = Array.from({ length: numVariants }, (_, i) => i).filter(
-    (i) => i !== changedIndex
+    (i) => i !== changedIndex,
   );
   if (otherIndices.length === 0) return newDist;
   // Calculate the total adjustment needed.
@@ -1299,14 +1448,14 @@ function renderDataTables(state, results) {
     state.mdeTableRows,
     results.mdeTableData,
     "mde-input",
-    mdeTableColumnConfig
+    mdeTableColumnConfig,
   );
   renderTableBody(
     timeTable.querySelector("tbody"),
     state.timeTableRows,
     results.timeTableData,
     "time-input",
-    timeTableColumnConfig
+    timeTableColumnConfig,
   );
   if (
     state.activeTab === "tab-table" &&
@@ -1329,7 +1478,7 @@ function renderTableBody(
   rowInputData,
   rowResultData,
   inputClass,
-  config
+  config,
 ) {
   if (!rowResultData) {
     tbodyEl.innerHTML = "";
@@ -1455,9 +1604,10 @@ function generateRowDataObject(tableType, inputValue, result) {
   if (!result) {
     return null;
   }
-  const crChangeText = `${result.baseline.toFixed(
-    2
-  )}% → ${result.targetRate.toFixed(2)}%`;
+  const isBinary = "baseline" in result;
+  const crChangeText = isBinary
+    ? `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(2)}%`
+    : `${result.baselineMean.toFixed(2)} → ${result.targetMean.toFixed(2)}`;
   if (tableType === "mdeTable") {
     return {
       inputValue: inputValue,
@@ -1468,7 +1618,7 @@ function generateRowDataObject(tableType, inputValue, result) {
   }
   if (tableType === "timeTable") {
     const mdeText = `${result.mde.toFixed(2)}${
-      result.isRelative ? "%" : " pp"
+      result.isRelative ? "%" : isBinary ? " pp" : ""
     }`;
     return {
       inputValue: inputValue,
@@ -1510,24 +1660,24 @@ function addDeleteButton(cell, index) {
 }
 
 function getTestTypeExplanation(state, results, effectValue) {
-  const { testType, baseline, variants = 2 } = state;
+  const { testType, variants = 2 } = state;
   const { duration, totalSampleSize } = results;
+  const isBinary = state.metricType === "binary";
+  const baseValue = isBinary ? state.baseline : state.baselineMean;
+  const formatValue = (val) => {
+    if (isBinary) return `${val.toFixed(2)}%`;
+    return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+  };
   const timeText = `<span class="highlight">${formatTimeEstimate(
-    duration
+    duration,
   )}</span>`;
   const totalSampleText = `<span class="highlight">${totalSampleSize.toLocaleString()} participants</span>`;
   const marginInPoints = Math.abs(effectValue);
   const bounds = {
-    from: `<span class="highlight">${baseline.toFixed(2)}%</span>`,
-    to: `<span class="highlight">${(baseline + effectValue).toFixed(
-      2
-    )}%</span>`,
-    upper: `<span class="highlight">${(baseline + marginInPoints).toFixed(
-      2
-    )}%</span>`,
-    lower: `<span class="highlight">${(baseline - marginInPoints).toFixed(
-      2
-    )}%</span>`,
+    from: `<span class="highlight">${formatValue(baseValue)}</span>`,
+    to: `<span class="highlight">${formatValue(baseValue + effectValue)}</span>`,
+    upper: `<span class="highlight">${formatValue(baseValue + marginInPoints)}</span>`,
+    lower: `<span class="highlight">${formatValue(baseValue - marginInPoints)}</span>`,
   };
   const nonInferioritySubject =
     variants > 2 ? "the new versions" : "the new version";
@@ -1598,17 +1748,18 @@ function calculateOptimalScale(baseline, effectValue) {
   }
   return {
     min: roundToNice(minBound),
-    max: Math.min(100, roundToNice(maxBound)),
+    max: roundToNice(maxBound),
   };
 }
 
-function formatBoundaryValue(value) {
-  if (value < 1) return value.toFixed(2) + "%";
-  if (value < 10) return value.toFixed(1) + "%";
-  return Math.round(value) + "%";
+function formatBoundaryValue(value, metricType) {
+  const suffix = metricType === "continuous" ? "" : "%";
+  if (value < 1) return value.toFixed(2) + suffix;
+  if (value < 10) return value.toFixed(1) + suffix;
+  return Math.round(value) + suffix;
 }
 
-function generateLabels(min, max, boundaries, testType, count = 6) {
+function generateLabels(min, max, boundaries, testType, metricType, count = 6) {
   const shouldShowLeftExtension =
     (testType === "two-tailed" || testType === "superiority-negative") &&
     boundaries.lower !== null &&
@@ -1623,7 +1774,7 @@ function generateLabels(min, max, boundaries, testType, count = 6) {
   const labels = [];
   for (let i = 0; i < count; i++) {
     const value = min + (max - min) * (i / (count - 1));
-    labels.push(formatBoundaryValue(value));
+    labels.push(formatBoundaryValue(value, metricType));
   }
   if (shouldShowRightExtension) {
     const lastLabelValue = labels[count - 1];
@@ -1642,7 +1793,7 @@ function generateLabels(min, max, boundaries, testType, count = 6) {
   return labels;
 }
 
-function updateChart(baseline, boundaries, scale, testType) {
+function updateChart(baseline, boundaries, scale, testType, metricType) {
   if (!singleTabChartBar || !singleTabChartLabels) return;
   singleTabChartBar.innerHTML = "";
   singleTabChartLabels.innerHTML = "";
@@ -1714,7 +1865,13 @@ function updateChart(baseline, boundaries, scale, testType) {
   baselineMarker.className = "baseline-marker";
   baselineMarker.style.left = baselinePos + "%";
   singleTabChartBar.appendChild(baselineMarker);
-  const labels = generateLabels(scale.min, scale.max, boundaries, testType);
+  const labels = generateLabels(
+    scale.min,
+    scale.max,
+    boundaries,
+    testType,
+    metricType,
+  );
   labels.forEach((label, index) => {
     const labelElement = document.createElement("span");
     labelElement.textContent = label;
@@ -1739,10 +1896,12 @@ function updateLegendLabels(testType) {
 }
 
 function updateChartVisualization(state) {
-  const { testType, baseline, absoluteMde } = state;
-  const boundaries = calculateBoundaries(baseline, absoluteMde, testType);
-  const scale = calculateOptimalScale(baseline, absoluteMde);
-  updateChart(baseline, boundaries, scale, testType);
+  const { testType, absoluteMde } = state;
+  const baseValue =
+    state.metricType === "binary" ? state.baseline : state.baselineMean;
+  const boundaries = calculateBoundaries(baseValue, absoluteMde, testType);
+  const scale = calculateOptimalScale(baseValue, absoluteMde);
+  updateChart(baseValue, boundaries, scale, testType, state.metricType);
   updateLegendLabels(testType);
 }
 
@@ -1821,7 +1980,7 @@ function downloadTableAsCSV(tableId) {
     tableId,
     calculatorState[stateKey],
     results[dataKey],
-    config
+    config,
   );
   downloadFile(content, filename, "text/csv;charset=utf-8;");
 }
@@ -1860,17 +2019,19 @@ function createCSVContentFromData(tableId, rowData, resultsData) {
 
 function generateExportRowData(result, config, inputValue) {
   if (!result) return [];
+  const isBinary = "baseline" in result;
+  const crChangeText = isBinary
+    ? `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(2)}%`
+    : `${result.baselineMean.toFixed(2)} → ${result.targetMean.toFixed(2)}`;
   const dataForExport = {
     inputValue: inputValue,
     durationDays: result.durationDays,
-    crChange: `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(
-      2
-    )}%`,
+    crChange: crChangeText,
     totalSampleSize: result.totalSampleSize,
     mde:
       result.mde !== undefined
-        ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : " pp"}`
-        : null, // No MDE in time table.
+        ? `${result.mde.toFixed(2)}${result.isRelative ? "%" : isBinary ? " pp" : ""}`
+        : null,
   };
   return config.map((col) => dataForExport[col.key] || "");
 }
@@ -1951,94 +2112,109 @@ function downloadPlan(format) {
   } catch (error) {
     console.error("Error generating plan:", error);
     alert(
-      "An unexpected error occurred while generating the plan. Please check the console for details."
+      "An unexpected error occurred while generating the plan. Please check the console for details.",
     );
   }
 }
 
 function generatePlanData(state, results) {
-  const mdeAbsPoints = state.absoluteMde.toFixed(2);
+  const isBinary = state.metricType === "binary";
+  const mdeAbsValue = state.absoluteMde.toFixed(2);
   const treatmentCount = state.variants - 1;
   const variantsText = `${state.variants} (Control + ${treatmentCount} ${
     treatmentCount === 1 ? "variant" : "variants"
   })`;
   const mdeSign = state.absoluteMde > 0 ? "+" : "";
+  const unitLabel = isBinary ? "percentage points" : "units";
+  const unitShort = isBinary ? "pp" : "";
+  const baseValue = isBinary ? state.baseline : state.baselineMean;
+  const targetValue = isBinary ? results.targetRate : results.targetMean;
+  const baseFormatted = isBinary
+    ? `${baseValue.toFixed(2)}%`
+    : baseValue.toFixed(2);
+  const targetFormatted = isBinary
+    ? `${targetValue.toFixed(2)}%`
+    : targetValue.toFixed(2);
+  const methodType = isBinary ? "Z-test for proportions" : "t-test for means";
+  const symbol1 = isBinary ? "p₁" : "μ₁";
+  const symbol2 = isBinary ? "p₂" : "μ₂";
+  const metricWord = isBinary ? "rate" : "mean";
   let effectSizeLabel = "Effect size to detect";
   let effectSizeText;
   switch (state.testType) {
     case "non-inferiority":
       effectSizeLabel = "Non-inferiority margin (δ)";
-      effectSizeText = `**${mdeAbsPoints} percentage points**`;
+      effectSizeText = isBinary
+        ? `**${mdeAbsValue} percentage points**`
+        : `**${mdeAbsValue}**`;
       break;
     case "equivalence":
       effectSizeLabel = "Equivalence margin (±δ)";
-      effectSizeText = `**±${mdeAbsPoints} percentage points**`;
+      effectSizeText = isBinary
+        ? `**±${mdeAbsValue} percentage points**`
+        : `**±${mdeAbsValue}**`;
       break;
     default:
-      const mdeAbsText = `${mdeSign}${mdeAbsPoints} percentage points`;
+      const mdeAbsText = isBinary
+        ? `${mdeSign}${mdeAbsValue} percentage points`
+        : `${mdeSign}${mdeAbsValue}`;
       effectSizeText = state.isRelativeMde
-        ? `**${mdeSign}${state.mde.toFixed(
-            2
-          )}%** (relative, an absolute change of ${mdeAbsText})`
+        ? `**${mdeSign}${state.mde.toFixed(2)}%** (relative, an absolute change of ${mdeAbsText})`
         : `**${mdeAbsText}**`;
   }
   const testTypeInfo = {
     superiority: {
-      method: "One-tailed Z-test for proportions",
+      method: `One-tailed ${methodType}`,
       null: {
-        text: "The new variant's rate is not better than the baseline's.",
-        formula: `p₂ ≤ p₁`,
+        text: `The new variant's ${metricWord} is not better than the baseline's.`,
+        formula: `${symbol2} ≤ ${symbol1}`,
       },
       alternative: {
-        text: "The new variant's rate is superior to the baseline's.",
-        formula: `p₂ > p₁`,
+        text: `The new variant's ${metricWord} is superior to the baseline's.`,
+        formula: `${symbol2} > ${symbol1}`,
       },
-      goal: `To reliably detect an improvement from ${state.baseline.toFixed(
-        2
-      )}% to ${results.targetRate.toFixed(2)}%.`,
+      goal: `To reliably detect an improvement from ${baseFormatted} to ${targetFormatted}.`,
     },
     "two-tailed": {
-      method: "Two-tailed Z-test for proportions",
+      method: `Two-tailed ${methodType}`,
       null: {
-        text: "The new variant's rate is the same as the baseline's.",
-        formula: `p₂ = p₁`,
+        text: `The new variant's ${metricWord} is the same as the baseline's.`,
+        formula: `${symbol2} = ${symbol1}`,
       },
       alternative: {
-        text: "The new variant's rate is different from the baseline's.",
-        formula: `p₂ ≠ p₁`,
+        text: `The new variant's ${metricWord} is different from the baseline's.`,
+        formula: `${symbol2} ≠ ${symbol1}`,
       },
-      goal: `To reliably detect a change from ${state.baseline.toFixed(
-        2
-      )}% to ${results.targetRate.toFixed(2)}%.`,
+      goal: `To reliably detect a change from ${baseFormatted} to ${targetFormatted}.`,
     },
     "non-inferiority": {
-      method: "One-tailed Z-test for proportions (non-inferiority)",
+      method: `One-tailed ${methodType} (non-inferiority)`,
       null: {
-        text: `The performance loss from the new variant is at least ${mdeAbsPoints} percentage points.`,
-        formula: `p₂ ≤ p₁ - ${mdeAbsPoints}`,
+        text: `The performance loss from the new variant is at least ${mdeAbsValue}${unitShort ? ` ${unitShort}` : ""}.`,
+        formula: `${symbol2} ≤ ${symbol1} - ${mdeAbsValue}`,
       },
       alternative: {
-        text: `The new variant's performance does not fall more than ${mdeAbsPoints} pp below the baseline.`,
-        formula: `p₂ > p₁ - ${mdeAbsPoints}`,
+        text: `The new variant's performance does not fall more than ${mdeAbsValue}${unitShort ? ` ${unitShort}` : ""} below the baseline.`,
+        formula: `${symbol2} > ${symbol1} - ${mdeAbsValue}`,
       },
-      goal: `To determine with confidence that the new variant is not unacceptably worse than the baseline (performance drop is less than ${mdeAbsPoints} pp).`,
+      goal: `To determine with confidence that the new variant is not unacceptably worse than the baseline (performance drop is less than ${mdeAbsValue}${unitShort ? ` ${unitShort}` : ""}).`,
     },
     equivalence: {
       method: "Two one-sided tests (TOST) for equivalence",
       null: {
-        text: `The true difference between the variant and baseline is outside the equivalence margin of ±${mdeAbsPoints} pp.`,
-        formula: `|p₂ - p₁| ≥ ${mdeAbsPoints}`,
+        text: `The true difference between the variant and baseline is outside the equivalence margin of ±${mdeAbsValue}${unitShort ? ` ${unitShort}` : ""}.`,
+        formula: `|${symbol2} - ${symbol1}| ≥ ${mdeAbsValue}`,
       },
       alternative: {
-        text: `The new variant is within ${mdeAbsPoints} pp of the baseline's performance.`,
-        formula: `|p₂ - p₁| < ${mdeAbsPoints}`,
+        text: `The new variant is within ${mdeAbsValue}${unitShort ? ` ${unitShort}` : ""} of the baseline's performance.`,
+        formula: `|${symbol2} - ${symbol1}| < ${mdeAbsValue}`,
       },
-      goal: `To confirm that the variants perform equivalently, within a margin of ±${mdeAbsPoints} percentage points of the baseline.`,
+      goal: `To confirm that the variants perform equivalently, within a margin of ±${mdeAbsValue} ${unitLabel} of the baseline.`,
     },
   };
   const currentTest = testTypeInfo[state.testType];
   const variantLabels = Array.from({ length: state.variants }, (_, i) =>
-    i === 0 ? "Control" : `Variant ${String.fromCharCode(65 + i)}`
+    i === 0 ? "Control" : `Variant ${String.fromCharCode(65 + i)}`,
   );
   return {
     planName: state.planName.trim() || null,
@@ -2061,7 +2237,7 @@ function generatePlanData(state, results) {
     dailyVisitors: state.visitors,
     trafficFlow: state.trafficFlow,
     effectiveDailySample: Math.round(
-      state.visitors * (state.trafficFlow / 100)
+      state.visitors * (state.trafficFlow / 100),
     ),
     trafficDistribution: state.trafficDistribution,
     buffer: state.buffer,
@@ -2082,7 +2258,7 @@ function renderPlanAsMarkdown(data) {
   const sampleTableMarkdown = generateAlignedMarkdownTable(
     data.sampleSizeTable.headers,
     data.sampleSizeTable.rows,
-    data.sampleSizeTable.footer
+    data.sampleSizeTable.footer,
   );
   const h0 = data.hypotheses.null;
   const h1 = data.hypotheses.alternative;
@@ -2134,12 +2310,12 @@ function generateAlignedMarkdownTable(headers, rows, footer) {
   const dataForWidthCalcs = [headers, ...rows, footer];
   const colWidths = headers.map((_, colIndex) => {
     return Math.max(
-      ...dataForWidthCalcs.map((row) => (row[colIndex] || "").length)
+      ...dataForWidthCalcs.map((row) => (row[colIndex] || "").length),
     );
   });
   const formatRow = (row) => {
     const paddedCells = row.map((cell, index) =>
-      (cell || "").padEnd(colWidths[index])
+      (cell || "").padEnd(colWidths[index]),
     );
     return `| ${paddedCells.join(" | ")} |`;
   };
@@ -2168,7 +2344,7 @@ function getModificationDescription(key, currentValue) {
     power: `Statistical power: ${currentValue}`,
     testType: `Test type: ${formatTestType(currentValue)}`,
     correctionMethod: `Multiple comparisons correction: ${formatCorrection(
-      currentValue
+      currentValue,
     )}`,
     trafficFlow: `Traffic flow: ${currentValue}%`,
     buffer: `Buffer: ${currentValue}%`,
@@ -2215,9 +2391,9 @@ function encodeStateToURL(state) {
       timechart: state.timeChartVisible ? 1 : null,
     },
   };
+  const isBinary = state.metricType === "binary";
   const params = {
-    // Parameters that apply to all tabs.
-    bl: state.baseline,
+    mt: state.metricType,
     rel: state.isRelativeMde ? 1 : 0,
     var: state.variants,
     tf: state.trafficFlow,
@@ -2231,6 +2407,12 @@ function encodeStateToURL(state) {
     tab: state.activeTab.replace("tab-", ""),
     ...(tabSpecificParamConfig[state.activeTab] || {}),
   };
+  if (isBinary) {
+    params.bl = state.baseline;
+  } else {
+    params.bm = state.baselineMean;
+    params.sd = state.standardDeviation;
+  }
   if (
     (state.variants > 2 || state.hasCustomTrafficDistribution) &&
     state.trafficDistribution &&
@@ -2240,11 +2422,11 @@ function encodeStateToURL(state) {
   }
   const queryString = Object.entries(params)
     .filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined
+      ([, value]) => value !== "" && value !== null && value !== undefined,
     )
     .map(
       ([key, value]) =>
-        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
     )
     .join("&");
   return `${window.location.origin}${window.location.pathname}?${queryString}`;
@@ -2323,6 +2505,9 @@ function renderMDEChart(state, mdeTableData) {
     userSelectedX: userXValues,
     userSelectedY: userYValues,
     formatX: (value) => {
+      if (state.metricType === "continuous" && !state.isRelativeMde) {
+        return value.toFixed(2);
+      }
       const unit = state.isRelativeMde ? "%" : "pp";
       return value.toFixed(2) + unit;
     },
@@ -2375,6 +2560,9 @@ function renderTimeChart(state, timeTableData) {
     userSelectedY: userYValues,
     formatX: (value) => Math.round(value).toString(),
     formatY: (value) => {
+      if (state.metricType === "continuous" && !state.isRelativeMde) {
+        return value.toFixed(2);
+      }
       const unit = state.isRelativeMde ? "%" : "pp";
       return value.toFixed(2) + unit;
     },
@@ -2487,9 +2675,13 @@ function renderDataPoints(svg, config, transformer) {
       ? config.formatY(config.userSelectedY[i])
       : config.userSelectedY[i].toFixed(1);
     const result = config.data[i];
-    const crChangeText = result
-      ? `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(2)}%`
-      : "";
+    let crChangeText = "";
+    if (result) {
+      const isBinary = "baseline" in result;
+      crChangeText = isBinary
+        ? `${result.baseline.toFixed(2)}% → ${result.targetRate.toFixed(2)}%`
+        : `${result.baselineMean.toFixed(2)} → ${result.targetMean.toFixed(2)}`;
+    }
     const tooltipText = `${config.xLabel || "X"}: ${xValue} • ${
       config.yLabel || "Y"
     }: ${yValue} • ${crChangeText}`;

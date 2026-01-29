@@ -64,14 +64,14 @@ function calculateUnevenSplitSampleSize(params, config) {
   const maxN = findMaxRequiredSampleSize(
     params,
     trafficDistribution,
-    f_control
+    f_control,
   );
   const sampleSizePerGroup = trafficDistribution.map((f) =>
-    Math.ceil(maxN * f)
+    Math.ceil(maxN * f),
   );
   const totalSampleSize = sampleSizePerGroup.reduce(
     (sum, size) => sum + size,
-    0
+    0,
   );
   return {
     sampleSizePerGroup,
@@ -107,39 +107,49 @@ function applyBufferToResults(unbufferedResults, buffer) {
   const bufferMultiplier = 1 + buffer / 100;
   return {
     totalSampleSize: Math.ceil(
-      unbufferedResults.totalSampleSize * bufferMultiplier
+      unbufferedResults.totalSampleSize * bufferMultiplier,
     ),
     sampleSizePerGroup: unbufferedResults.sampleSizePerGroup.map((size) =>
-      Math.ceil(size * bufferMultiplier)
+      Math.ceil(size * bufferMultiplier),
     ),
   };
 }
 
 function getStatisticalParams(config) {
-  const {
-    baseline,
-    absoluteMde,
-    alpha,
-    power,
-    variantCount,
-    testType,
-    correctionMethod,
-  } = config;
-  // For non-inferiority, the margin is a negative change, but the user enters a positive number.
-  const direction = testType === "non-inferiority" ? -1 : Math.sign(absoluteMde);
-  const absoluteEffectSize = direction * (absoluteMde / 100);
-  const treatmentCR = baseline + absoluteEffectSize;
+  const { alpha, power, variantCount, testType, correctionMethod } = config;
   const adjustedAlpha = adjustAlphaForMultipleComparisons(
     alpha,
     variantCount,
-    correctionMethod
+    correctionMethod,
   );
   const { zAlpha, zBeta } = calculateZScores(testType, adjustedAlpha, power);
+  if (config.metricType === "continuous") {
+    return getContinuousParams(config, zAlpha, zBeta);
+  }
+  return getBinaryParams(config, zAlpha, zBeta);
+}
+
+function getContinuousParams(config, zAlpha, zBeta) {
+  const { standardDeviation, meanDifference } = config;
+  const variance = standardDeviation * standardDeviation;
+  return {
+    zAlpha,
+    zBeta,
+    varControl: variance,
+    varTreatment: variance,
+    absoluteEffectSize: meanDifference,
+  };
+}
+
+function getBinaryParams(config, zAlpha, zBeta) {
+  const { baseline, absoluteMde, testType } = config;
+  // For non-inferiority, the margin is a negative change, but the user enters a positive number.
+  const direction =
+    testType === "non-inferiority" ? -1 : Math.sign(absoluteMde);
+  const absoluteEffectSize = direction * (absoluteMde / 100);
+  const treatmentCR = baseline + absoluteEffectSize;
   const epsilon = 1e-12; // To avoid division by zero or log(0).
-  const clippedBaseline = Math.max(
-    epsilon,
-    Math.min(1 - epsilon, baseline)
-  );
+  const clippedBaseline = Math.max(epsilon, Math.min(1 - epsilon, baseline));
   let varControl, varTreatment;
   if (testType === "non-inferiority" || testType === "equivalence") {
     varControl = clippedBaseline * (1.0 - clippedBaseline);
@@ -147,18 +157,12 @@ function getStatisticalParams(config) {
   } else {
     const clippedTreatmentCR = Math.max(
       epsilon,
-      Math.min(1 - epsilon, treatmentCR)
+      Math.min(1 - epsilon, treatmentCR),
     );
     varControl = clippedBaseline * (1.0 - clippedBaseline);
     varTreatment = clippedTreatmentCR * (1.0 - clippedTreatmentCR);
   }
-  return {
-    zAlpha,
-    zBeta,
-    varControl,
-    varTreatment,
-    absoluteEffectSize,
-  };
+  return { zAlpha, zBeta, varControl, varTreatment, absoluteEffectSize };
 }
 
 function isEvenSplit(distribution) {
@@ -170,7 +174,7 @@ function isEvenSplit(distribution) {
 function adjustAlphaForMultipleComparisons(
   alpha,
   variantCount,
-  correctionMethod
+  correctionMethod,
 ) {
   if (variantCount <= 2) {
     return alpha;
@@ -234,7 +238,7 @@ function normSInv(p) {
   const p_high = 1 - p_low;
   if (typeof p !== "number" || p <= 0 || p >= 1) {
     throw new Error(
-      "normSInv: Argument p must be a probability between 0 and 1 (exclusive)."
+      "normSInv: Argument p must be a probability between 0 and 1 (exclusive).",
     );
   }
   let q, r, retVal;
@@ -262,12 +266,8 @@ function normSInv(p) {
   return retVal;
 }
 
-export function calculateMDEFromSampleSize(
-  totalSampleSize,
-  config
-) {
+export function calculateMDEFromSampleSize(totalSampleSize, config) {
   const {
-    baseline,
     alpha = 0.05,
     power = 0.8,
     buffer = 0,
@@ -277,33 +277,34 @@ export function calculateMDEFromSampleSize(
   } = config;
   const variantCount = trafficDistribution.length;
   const unbufferedTotalSampleSize = totalSampleSize / (1 + buffer / 100);
-  const baselineRate = baseline / 100;
   const adjustedAlpha = adjustAlphaForMultipleComparisons(
     alpha,
     variantCount,
-    correctionMethod
+    correctionMethod,
   );
   const controlFraction = trafficDistribution[0];
   const minVariantFraction = Math.min(...trafficDistribution.slice(1));
   const n_c = unbufferedTotalSampleSize * controlFraction;
   const n_v = unbufferedTotalSampleSize * minVariantFraction;
+  const { zAlpha, zBeta } = calculateZScores(testType, adjustedAlpha, power);
+  if (config.metricType === "continuous") {
+    const { standardDeviation } = config;
+    const z_value = zAlpha + zBeta;
+    return z_value * standardDeviation * Math.sqrt(1 / n_c + 1 / n_v);
+  }
+  const baselineRate = config.baseline / 100;
   let mde_proportion;
   if (testType === "superiority" || testType === "two-tailed") {
-    const { zAlpha, zBeta } = calculateZScores(testType, adjustedAlpha, power);
     const Z2 = Math.pow(zAlpha + zBeta, 2);
     const p = baselineRate;
-    // a*x^2 + b*x + c = 0, where x is the absolute MDE.
     const a = n_v + Z2;
     const b = Z2 * (2 * p - 1);
     const c = -Z2 * p * (1 - p) * (1 + n_v / n_c);
     mde_proportion = solveQuadratic(a, b, c);
   } else {
-    // Non-inferiority & equivalence logic.
-    const { zAlpha, zBeta } = calculateZScores(testType, adjustedAlpha, power);
     const control_std = Math.sqrt(baselineRate * (1 - baselineRate));
     const z_value = zAlpha + zBeta;
-    mde_proportion =
-      z_value * control_std * Math.sqrt(1 / n_c + 1 / n_v);
+    mde_proportion = z_value * control_std * Math.sqrt(1 / n_c + 1 / n_v);
   }
   if (mde_proportion === null || isNaN(mde_proportion)) {
     return NaN;
