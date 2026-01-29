@@ -85,7 +85,7 @@ for file in "${all_changed_files[@]}"; do
         git add "app/index.html"
 
         # Update service worker cache list with versioned URLs.
-        perl -pi -e "s|\"/${base_name}(?:\\?[^\"]*)?\"|\"/\\${base_name}?h=${new_hash}\"|g" "app/sw.js"
+        perl -pi -e "s|'/${base_name}(?:\\?[^']*)?'|'/${base_name}?h=${new_hash}'|g" "app/sw.js"
         git add "app/sw.js"
         echo "Updated sw.js cache for $base_name with hash $new_hash"
 
