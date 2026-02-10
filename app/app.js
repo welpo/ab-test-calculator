@@ -2303,7 +2303,7 @@ ${sampleTableMarkdown}
 
 ---
 
-**[View this interactive plan in the calculator](${data.shareUrl})**`;
+**[View or edit this plan in the calculator](${data.shareUrl})**`;
 }
 
 function generateAlignedMarkdownTable(headers, rows, footer) {
