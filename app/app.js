@@ -960,6 +960,7 @@ function calculateResultsForActiveTab(state) {
           sampleSizePerVariant: singleResult.sampleSizePerGroup,
           totalSampleSize: singleResult.totalSampleSize,
           targetRate: singleResult.targetRate,
+          targetMean: singleResult.targetMean,
         };
 
       case "tab-table":
