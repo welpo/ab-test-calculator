@@ -7,6 +7,13 @@ import {
 
 const CSVPREFIX = "calculator.osc.garden";
 const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
+const EXPORT_TABLE_FORMATS = ["tsv", "csv", "md"];
+const FORMAT_LABELS = { tsv: "TSV", csv: "CSV", md: "MD" };
+const EXPORT_MIME_TYPES = {
+  csv: "text/csv;charset=utf-8;",
+  tsv: "text/tab-separated-values;charset=utf-8;",
+  md: "text/markdown;charset=utf-8;",
+};
 
 // Singular defaults used when adding rows.
 const DEFAULT_MDE = 10;
@@ -114,6 +121,8 @@ const calculatorState = {
   timeChartVisible: false,
 
   preferredDownloadFormat: "text",
+  preferredTableDownloadFormat: "csv",
+  preferredCopyFormat: "csv",
   /** The name of the experiment plan for sharing/exporting. */
   planName: "",
 };
@@ -279,6 +288,14 @@ function loadPersistentSettings() {
     calculatorState.preferredDownloadFormat =
       savedSettings.preferredDownloadFormat;
   }
+  for (const key of ["preferredCopyFormat", "preferredTableDownloadFormat"]) {
+    if (
+      savedSettings[key] &&
+      EXPORT_TABLE_FORMATS.includes(savedSettings[key])
+    ) {
+      calculatorState[key] = savedSettings[key];
+    }
+  }
   if (settingsCheckbox) {
     settingsCheckbox.checked = calculatorState.isAdvancedOpen;
   }
@@ -384,6 +401,8 @@ function savePersistentSettings() {
     mdeChartVisible: calculatorState.mdeChartVisible,
     timeChartVisible: calculatorState.timeChartVisible,
     preferredDownloadFormat: calculatorState.preferredDownloadFormat,
+    preferredCopyFormat: calculatorState.preferredCopyFormat,
+    preferredTableDownloadFormat: calculatorState.preferredTableDownloadFormat,
   };
   saveSettings(settingsToSave);
 }
@@ -626,12 +645,117 @@ function setupEventListeners() {
   setupTableDelegation(mdeTable, "mdeTableRows", "mde-input");
   setupTableDelegation(timeTable, "timeTableRows", "time-input");
 
-  downloadCSVBtn.addEventListener("click", () =>
-    downloadTableAsCSV("mdeTable"),
+  setupActionDropdown(
+    "copyMDESplitBtn",
+    "copyMDEMainBtn",
+    "copyMDETrigger",
+    "mdeTable",
+    "copy",
   );
-  downloadTimeCSVBtn.addEventListener("click", () =>
-    downloadTableAsCSV("timeTable"),
+  setupActionDropdown(
+    "copyTimeSplitBtn",
+    "copyTimeMainBtn",
+    "copyTimeTrigger",
+    "timeTable",
+    "copy",
   );
+  setupActionDropdown(
+    "downloadMDESplitBtn",
+    "downloadMDEMainBtn",
+    "downloadMDETrigger",
+    "mdeTable",
+    "download",
+  );
+  setupActionDropdown(
+    "downloadTimeSplitBtn",
+    "downloadTimeMainBtn",
+    "downloadTimeTrigger",
+    "timeTable",
+    "download",
+  );
+
+  function setupActionDropdown(
+    splitBtnId,
+    mainBtnId,
+    triggerBtnId,
+    tableId,
+    type,
+  ) {
+    const splitContainer = document.getElementById(splitBtnId);
+    const mainBtn = document.getElementById(mainBtnId);
+    const triggerBtn = document.getElementById(triggerBtnId);
+    if (!splitContainer || !mainBtn || !triggerBtn) return;
+    updateActionSplitButtonUI(mainBtnId, type);
+    mainBtn.addEventListener("click", () =>
+      handleActionMainClick(tableId, type),
+    );
+    triggerBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document
+        .querySelectorAll(".split-button-container.open")
+        .forEach((container) => {
+          if (container !== splitContainer) container.classList.remove("open");
+        });
+      splitContainer.classList.toggle("open");
+    });
+    const dropdownMenu = splitContainer.querySelector(".dropdown-menu");
+    if (dropdownMenu) {
+      dropdownMenu.addEventListener("click", (e) => {
+        const item = e.target.closest(".dropdown-item");
+        if (!item) return;
+        e.preventDefault();
+        const format = item.dataset.format;
+        if (type === "copy") {
+          calculatorState.preferredCopyFormat = format;
+        } else {
+          calculatorState.preferredTableDownloadFormat = format;
+        }
+        savePersistentSettings();
+        if (type === "copy") {
+          updateActionSplitButtonUI("copyMDEMainBtn", "copy");
+          updateActionSplitButtonUI("copyTimeMainBtn", "copy");
+        } else {
+          updateActionSplitButtonUI("downloadMDEMainBtn", "download");
+          updateActionSplitButtonUI("downloadTimeMainBtn", "download");
+        }
+        splitContainer.classList.remove("open");
+        handleActionMainClick(tableId, type);
+      });
+    }
+  }
+
+  function handleActionMainClick(tableId, type) {
+    if (type === "copy") {
+      copyTableToClipboard(tableId, calculatorState.preferredCopyFormat);
+    } else {
+      downloadTable(tableId, calculatorState.preferredTableDownloadFormat);
+    }
+  }
+
+  // Close split-button dropdowns when clicking outside.
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".split-button-container")) {
+      document
+        .querySelectorAll(".split-button-container.open")
+        .forEach((container) => {
+          container.classList.remove("open");
+        });
+    }
+  });
+
+  function updateActionSplitButtonUI(btnId, type) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    const isCopy = type === "copy";
+    const format = isCopy
+      ? calculatorState.preferredCopyFormat
+      : calculatorState.preferredTableDownloadFormat;
+    const text = FORMAT_LABELS[format] ?? "CSV";
+    btn.title = `${isCopy ? "Copy" : "Download"} table as ${text}`;
+    const iconClass = isCopy ? "action-icon-copy" : "action-icon-download";
+    btn.innerHTML = `<span class="action-icon ${iconClass}"></span>\n${text}`;
+  }
+
   shareButton.addEventListener("click", handleShareButtonClick);
 
   variantDistributionContainer.addEventListener("input", (e) => {
@@ -1982,51 +2106,83 @@ function applyOptimalDistribution() {
   runUpdateCycle();
 }
 
-function downloadTableAsCSV(tableId) {
-  const stateKey = tableId === "mdeTable" ? "mdeTableRows" : "timeTableRows";
-  const dataKey = tableId === "mdeTable" ? "mdeTableData" : "timeTableData";
-  const results = calculateResultsForActiveTab(calculatorState);
-  const config =
-    tableId === "mdeTable" ? mdeTableColumnConfig : timeTableColumnConfig;
-  const { content, filename } = createCSVContentFromData(
-    tableId,
-    calculatorState[stateKey],
-    results[dataKey],
-    config,
-  );
-  downloadFile(content, filename, "text/csv;charset=utf-8;");
+function sanitizeForFilename(name) {
+  return name
+    .replace(/[^a-zA-Z0-9\-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
-function createCSVContentFromData(tableId, rowData, resultsData) {
-  const table = document.getElementById(tableId);
-  const headers = Array.from(table.querySelectorAll("thead th"))
-    .map((th) => {
-      const csvHeader = th.dataset.csvHeader || th.textContent;
-      return csvHeader.trim();
-    })
-    .join(";");
-  const config =
-    tableId === "mdeTable" ? mdeTableColumnConfig : timeTableColumnConfig;
-  const rows = rowData
-    .map((rowItem, index) => {
-      const result = resultsData[index];
-      const rowValues = generateExportRowData(result, config, rowItem);
-      if (rowValues.length === 0) return "";
-      return rowValues.join(";");
-    })
-    .join("\n");
-  const csvContent = `${headers}\n${rows}`;
+function generateExportFilename(tableId, extension) {
   const dateStr = new Date().toISOString().split("T")[0];
   const planName = calculatorState.planName.trim();
-  const sanitizedName = planName
-    ? planName.replace(/[^a-zA-Z0-9\-_]/g, "-").replace(/-+/g, "-")
-    : "";
+  const sanitizedName = planName ? sanitizeForFilename(planName) : "";
   const tableType =
     tableId === "mdeTable" ? "effect-to-days" : "days-to-effect";
-  const filename = sanitizedName
-    ? `${sanitizedName}-${tableType}-${dateStr}.csv`
-    : `${CSVPREFIX}-${tableType}-${dateStr}.csv`;
-  return { content: csvContent, filename };
+  const base = sanitizedName || CSVPREFIX;
+  return `${base}-${tableType}-${dateStr}.${extension}`;
+}
+
+function extractTableData(tableId) {
+  const table = document.getElementById(tableId);
+  const stateKey = tableId === "mdeTable" ? "mdeTableRows" : "timeTableRows";
+  const dataKey = tableId === "mdeTable" ? "mdeTableData" : "timeTableData";
+  const config =
+    tableId === "mdeTable" ? mdeTableColumnConfig : timeTableColumnConfig;
+  const results = calculateResultsForActiveTab(calculatorState);
+  const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
+    (th.dataset.csvHeader || th.textContent).trim(),
+  );
+  const rows = calculatorState[stateKey]
+    .map((rowItem, index) => {
+      const result = results[dataKey][index];
+      return generateExportRowData(result, config, rowItem);
+    })
+    .filter((rowValues) => rowValues.length > 0);
+  return { headers, rows };
+}
+
+function generateTableContent(tableId, format) {
+  const { headers, rows } = extractTableData(tableId);
+  if (format === "md") {
+    const headerLine = `| ${headers.join(" | ")} |`;
+    const separatorLine = `| ${headers.map(() => "---").join(" | ")} |`;
+    const bodyLines = rows.map((r) => `| ${r.join(" | ")} |`).join("\n");
+    return `${headerLine}\n${separatorLine}\n${bodyLines}`;
+  }
+  const delimiter = format === "tsv" ? "\t" : ";";
+  const headerLine = headers.join(delimiter);
+  const bodyLines = rows.map((r) => r.join(delimiter)).join("\n");
+  return `${headerLine}\n${bodyLines}`;
+}
+
+function downloadTable(tableId, format) {
+  const content = generateTableContent(tableId, format);
+  const filename = generateExportFilename(tableId, format);
+  downloadFile(
+    content,
+    filename,
+    EXPORT_MIME_TYPES[format] || EXPORT_MIME_TYPES.csv,
+  );
+}
+
+function copyTableToClipboard(tableId, format) {
+  const content = generateTableContent(tableId, format);
+  navigator.clipboard
+    .writeText(content)
+    .then(() => {
+      const mainBtnId =
+        tableId === "mdeTable" ? "copyMDEMainBtn" : "copyTimeMainBtn";
+      const btn = document.getElementById(mainBtnId);
+      const originalContent = btn.innerHTML;
+      btn.innerHTML = `<span class="action-icon action-icon-checkmark"></span>\nCopied!`;
+      setTimeout(() => {
+        btn.innerHTML = originalContent;
+      }, 2000);
+    })
+    .catch((err) => {
+      console.error("Failed to copy table: ", err);
+    });
 }
 
 function generateExportRowData(result, config, inputValue) {
@@ -2096,7 +2252,7 @@ function downloadPlan(format) {
     const markdownContent = renderPlanAsMarkdown(planData);
     const dateStr = new Date().toISOString().split("T")[0];
     const baseName = planData.planName
-      ? planData.planName.replace(/[^a-zA-Z0-9\-_]/g, "-").replace(/-+/g, "-")
+      ? sanitizeForFilename(planData.planName)
       : "experiment-plan";
     let content;
     let filename;

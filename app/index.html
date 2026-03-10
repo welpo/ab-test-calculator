@@ -43,7 +43,7 @@
         base-uri 'self';
         form-action 'self';
         ">
-    <link rel="stylesheet" href="styles.css?h=dcac906c">
+    <link rel="stylesheet" href="styles.css?h=940e3567">
 </head>
 
 <body>
@@ -287,10 +287,49 @@
                         </table>
                     </div>
                     <div class="comparison-actions">
-                        <button class="comparison-button" id="addRowBtn">Add row</button>
-                        <button class="comparison-button" id="downloadCSVBtn">Download CSV</button>
-                        <button class="comparison-button" id="resetMDETableBtn">Reset table</button>
-                        <button class="comparison-button" id="toggleMDEChartBtn">Show chart</button>
+                        <div class="action-group">
+                            <button class="comparison-button" id="addRowBtn">Add row</button>
+                            <button class="comparison-button" id="resetMDETableBtn">Reset table</button>
+                            <button class="comparison-button" id="toggleMDEChartBtn">Show chart</button>
+                        </div>
+                        
+                        <div class="actions-divider"></div>
+                        
+                        <div class="action-group">
+                            <div class="split-button-container" id="downloadMDESplitBtn">
+                                <button class="split-button-main" id="downloadMDEMainBtn" title="Download table">
+                                    <span class="action-icon action-icon-download"></span>
+                                    CSV
+                                </button>
+                                <button class="split-button-trigger" id="downloadMDETrigger" title="More download options">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item" data-format="tsv">TSV</button>
+                                    <button class="dropdown-item" data-format="csv">CSV</button>
+                                    <button class="dropdown-item" data-format="md">MD</button>
+                                </div>
+                            </div>
+                            
+                            <div class="split-button-container" id="copyMDESplitBtn">
+                                <button class="split-button-main" id="copyMDEMainBtn" title="Copy table">
+                                    <span class="action-icon action-icon-copy"></span>
+                                    CSV
+                                </button>
+                                <button class="split-button-trigger" id="copyMDETrigger" title="More copy options">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item" data-format="tsv">TSV</button>
+                                    <button class="dropdown-item" data-format="csv">CSV</button>
+                                    <button class="dropdown-item" data-format="md">MD</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="chart-container hidden" id="mdeChartContainer">
                         <svg id="mdeChart" viewBox="0 0 500 250"></svg>
@@ -315,10 +354,49 @@
                         </table>
                     </div>
                     <div class="comparison-actions">
-                        <button class="comparison-button" id="addTimeRowBtn">Add row</button>
-                        <button class="comparison-button" id="downloadTimeCSVBtn">Download CSV</button>
-                        <button class="comparison-button" id="resetTimeTableBtn">Reset table</button>
-                        <button class="comparison-button" id="toggleTimeChartBtn">Show chart</button>
+                        <div class="action-group">
+                            <button class="comparison-button" id="addTimeRowBtn">Add row</button>
+                            <button class="comparison-button" id="resetTimeTableBtn">Reset table</button>
+                            <button class="comparison-button" id="toggleTimeChartBtn">Show chart</button>
+                        </div>
+                        
+                        <div class="actions-divider"></div>
+                        
+                        <div class="action-group">
+                            <div class="split-button-container" id="downloadTimeSplitBtn">
+                                <button class="split-button-main" id="downloadTimeMainBtn" title="Download table">
+                                    <span class="action-icon action-icon-download"></span>
+                                    CSV
+                                </button>
+                                <button class="split-button-trigger" id="downloadTimeTrigger" title="More download options">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item" data-format="tsv">TSV</button>
+                                    <button class="dropdown-item" data-format="csv">CSV</button>
+                                    <button class="dropdown-item" data-format="md">MD</button>
+                                </div>
+                            </div>
+
+                            <div class="split-button-container" id="copyTimeSplitBtn">
+                                <button class="split-button-main" id="copyTimeMainBtn" title="Copy table">
+                                    <span class="action-icon action-icon-copy"></span>
+                                    CSV
+                                </button>
+                                <button class="split-button-trigger" id="copyTimeTrigger" title="More copy options">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item" data-format="tsv">TSV</button>
+                                    <button class="dropdown-item" data-format="csv">CSV</button>
+                                    <button class="dropdown-item" data-format="md">MD</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="chart-container hidden" id="timeChartContainer">
                         <svg id="timeChart" viewBox="0 0 500 250"></svg>
@@ -687,7 +765,7 @@
 </div>
 
 <script defer src="sw-registration.js?h=6497cb14"></script>
-<script defer type="module" src="app.js?h=3fc7298a"></script>
+<script defer type="module" src="app.js?h=57eb5bb1"></script>
 <script defer src="https://cdn.jsdelivr.net/gh/welpo/experimentation-tools@latest/app/robot.js"></script>
 </body>
 </html>
