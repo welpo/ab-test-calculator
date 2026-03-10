@@ -559,6 +559,17 @@ function setupEventListeners() {
     runUpdateCycle();
   });
 
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "+") return;
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const tab = calculatorState.activeTab;
+    if (tab === "tab-table" || tab === "tab-time") {
+      e.preventDefault();
+      (tab === "tab-table" ? addRowBtn : addTimeRowBtn).click();
+    }
+  });
+
   function setupTableDelegation(tableElement, rowInputDataKey, inputClassName) {
     tableElement.addEventListener("click", (e) => {
       if (e.target.classList.contains("delete-row")) {

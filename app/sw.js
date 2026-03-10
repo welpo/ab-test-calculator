@@ -2,7 +2,7 @@ const CACHE_NAME = 'ab-calc-cache-v1.0.0';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/app.js?h=17373586',
+  '/app.js?h=3fc7298a',
   '/statistics.js?h=b0942d7a',
   '/styles.css?h=dcac906c',
   '/noscript.css?h=cb3a5a25',
