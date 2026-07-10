@@ -48,11 +48,7 @@ function shouldUseEvenSplitLogic(config) {
 function calculateEvenSplitSampleSize(params, config) {
   const variantCount = getVariantCount(config);
   const sampleSizePerGroup = calculateBaseSampleSize(params);
-  const totalSampleSize = sampleSizePerGroup * variantCount;
-  return {
-    sampleSizePerGroup: Array(variantCount).fill(Math.ceil(sampleSizePerGroup)),
-    totalSampleSize: Math.ceil(totalSampleSize),
-  };
+  return { sampleSizePerGroup: Array(variantCount).fill(sampleSizePerGroup) };
 }
 
 function calculateUnevenSplitSampleSize(params, config) {
@@ -66,17 +62,8 @@ function calculateUnevenSplitSampleSize(params, config) {
     trafficDistribution,
     f_control,
   );
-  const sampleSizePerGroup = trafficDistribution.map((f) =>
-    Math.ceil(maxN * f),
-  );
-  const totalSampleSize = sampleSizePerGroup.reduce(
-    (sum, size) => sum + size,
-    0,
-  );
-  return {
-    sampleSizePerGroup,
-    totalSampleSize,
-  };
+  const sampleSizePerGroup = trafficDistribution.map((f) => maxN * f);
+  return { sampleSizePerGroup };
 }
 
 function getVariantCount(config) {
@@ -105,14 +92,14 @@ function findMaxRequiredSampleSize(params, trafficDistribution, f_control) {
 
 function applyBufferToResults(unbufferedResults, buffer) {
   const bufferMultiplier = 1 + buffer / 100;
-  return {
-    totalSampleSize: Math.ceil(
-      unbufferedResults.totalSampleSize * bufferMultiplier,
-    ),
-    sampleSizePerGroup: unbufferedResults.sampleSizePerGroup.map((size) =>
-      Math.ceil(size * bufferMultiplier),
-    ),
-  };
+  const sampleSizePerGroup = unbufferedResults.sampleSizePerGroup.map((size) =>
+    Math.ceil(size * bufferMultiplier),
+  );
+  const totalSampleSize = sampleSizePerGroup.reduce(
+    (sum, size) => sum + size,
+    0,
+  );
+  return { totalSampleSize, sampleSizePerGroup };
 }
 
 function getStatisticalParams(config) {
