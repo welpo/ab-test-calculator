@@ -1,11 +1,13 @@
-const CACHE_NAME = 'ab-calc-cache-v1.0.0';
+// GENERATED BLOCK
+const CACHE_NAME = 'ab-calc-cache-fbb510b2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/app.js?h=f97a4936',
   '/statistics.js?h=14f87ed8',
-  '/styles.css?h=940e3567',
+  '/app.js?h=ebc3f486',
+  '/styles.css?h=97f3a184',
   '/noscript.css?h=cb3a5a25',
+  '/sw-registration.js?h=21b88632',
   '/manifest.json?h=2efffed0',
   '/favicon-16x16.png',
   '/favicon-32x32.png',
@@ -18,6 +20,7 @@ const ASSETS_TO_CACHE = [
   '/icon-maskable-512x512.png',
   '/apple-touch-icon.png'
 ];
+// END GENERATED BLOCK
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -29,21 +32,21 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
+    caches.keys()
+      .then(names => Promise.all(
+        names
+          .filter(name => name.startsWith('ab-calc-cache-') && name !== CACHE_NAME)
           .map(name => caches.delete(name))
-      );
-    })
-    .then(() => self.clients.claim())
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-      .catch(() => caches.match('/index.html'))
-  );
+  if (event.request.method !== 'GET') return;
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request).catch(() => caches.match('/index.html')));
+    return;
+  }
+  event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
 });

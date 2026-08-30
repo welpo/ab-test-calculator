@@ -14,7 +14,6 @@ function get_file_hash() {
 }
 
 function contains_todo() {
-    return 1
     local file="$1"
     grep -q "TODO" "$file"
 }
@@ -26,12 +25,26 @@ function has_unstaged_changes() {
 
 # Files to watch for cache busting (relative to app/)
 APP_FILES_TO_CACHEBUST=(
+    "statistics.js"
     "app.js"
     "styles.css"
     "noscript.css"
     "sw-registration.js"
     "manifest.json"
-    "statistics.js"
+)
+
+STABLE_ASSETS=(
+    "index.html"
+    "favicon-16x16.png"
+    "favicon-32x32.png"
+    "favicon-48x48.png"
+    "favicon-96x96.png"
+    "favicon-192x192.png"
+    "favicon.ico"
+    "icon-512x512.png"
+    "icon-maskable-192x192.png"
+    "icon-maskable-512x512.png"
+    "apple-touch-icon.png"
 )
 
 # Files imported by app.js
@@ -47,16 +60,35 @@ elif command -v optipng &> /dev/null; then
     png_compressor="optipng -o 7"
 fi
 
-# Get newly added and modified files.
-mapfile -t all_changed_files < <(git diff --cached --name-only --diff-filter=d)
+mapfile -t all_changed_files < <(git diff --cached --name-only)
+
+app_files_staged=false
+for file in "${all_changed_files[@]}"; do
+    [[ "$file" == app/* ]] && app_files_staged=true
+done
+
+if [[ "$app_files_staged" == true ]]; then
+    protected_files=("app/index.html" "app/app.js" "app/sw.js")
+    for asset in "${APP_FILES_TO_CACHEBUST[@]}" "${STABLE_ASSETS[@]}"; do
+        protected_files+=("app/$asset")
+    done
+    for file in "${protected_files[@]}"; do
+        if has_unstaged_changes "$file"; then
+            error_exit "$file has unstaged changes. Commit or stash them before proceeding."
+        fi
+    done
+fi
 
 script_name=$(basename "$0")
-# Loop through all newly added or modified files.
 for file in "${all_changed_files[@]}"; do
     file_name=$(basename "$file")
 
     # Ignore this script and the changelog.
     if [[ "$file_name" == "$script_name" ]] || [[ "$file_name" == "CHANGELOG.md" ]]; then
+        continue
+    fi
+
+    if ! git cat-file -e ":$file" 2>/dev/null; then
         continue
     fi
 
@@ -75,27 +107,54 @@ for file in "${all_changed_files[@]}"; do
     if has_unstaged_changes "app/index.html"; then
         error_exit "index.html has unstaged changes. Commit or stash them before proceeding."
     fi
+done
 
-    # Update cache busting ?urls in index.html.
-    file_without_prefix=${file#app/}
-    if [[ " ${APP_FILES_TO_CACHEBUST[*]} " =~ ${file_without_prefix} ]]; then
-        new_hash=$(get_file_hash "$file")
-        base_name=$(basename "$file")
-        perl -pi -e "s|${base_name}?[^\"]*\"|${base_name}?h=${new_hash}\"|g; s|${base_name}\"|${base_name}?h=${new_hash}\"|g" "app/index.html"
-        git add "app/index.html"
+[[ "$app_files_staged" == true ]] || exit 0
 
-        # Update service worker cache list with versioned URLs.
-        perl -pi -e "s|'/${base_name}(?:\\?[^']*)?'|'/${base_name}?h=${new_hash}'|g" "app/sw.js"
-        git add "app/sw.js"
-        echo "Updated sw.js cache for $base_name with hash $new_hash"
+fingerprint=""
+declare -A hashes
+for asset in "${APP_FILES_TO_CACHEBUST[@]}"; do
+    asset_path="app/$asset"
+    [[ -f "$asset_path" ]] || error_exit "Precached asset $asset_path is missing."
 
-        # Update import in app.js for files it imports.
-        if [[ " ${APP_JS_IMPORTS[*]} " =~ " ${base_name} " ]]; then
-            perl -pi -e "s|from \"./${base_name}(?:\\?[^\"]*)?\"|from \"./${base_name}?h=${new_hash}\"|g" "app/app.js"
-            git add "app/app.js"
-            echo "Updated app.js import for $base_name with hash $new_hash"
-        fi
+    hash=$(get_file_hash "$asset_path")
+    hashes["$asset"]=$hash
+    fingerprint+="$asset:$hash"$'\n'
 
-        echo "Updated cache bust hash for $file to $new_hash"
+    perl -0777 -pi -e "s{([\"'])((?:\\./|/)?)\\Q$asset\\E(?:\\?h=[0-9a-f]{8})?\\1}{\${1}\${2}$asset?h=$hash\${1}}g" app/index.html
+
+    if [[ " ${APP_JS_IMPORTS[*]} " =~ ${asset} ]]; then
+        perl -pi -e "s|from \"./${asset}(?:\\?[^\"]*)?\"|from \"./${asset}?h=${hash}\"|g" app/app.js
     fi
 done
+
+for asset in "${STABLE_ASSETS[@]}"; do
+    asset_path="app/$asset"
+    [[ -f "$asset_path" ]] || error_exit "Precached asset $asset_path is missing."
+    fingerprint+="$asset:$(get_file_hash "$asset_path")"$'\n'
+done
+
+if command -v md5sum >/dev/null 2>&1; then
+    cache_name="ab-calc-cache-$(printf '%s' "$fingerprint" | md5sum | cut -d' ' -f1 | head -c 8)"
+else
+    cache_name="ab-calc-cache-$(printf '%s' "$fingerprint" | md5 -q | head -c 8)"
+fi
+
+manifest="  '/',"$'\n'"  '/index.html',"
+for asset in "${APP_FILES_TO_CACHEBUST[@]}"; do
+    manifest+=$'\n'"  '/$asset?h=${hashes[$asset]}',"
+done
+for asset in "${STABLE_ASSETS[@]}"; do
+    [[ "$asset" == "index.html" ]] || manifest+=$'\n'"  '/$asset',"
+done
+manifest=${manifest%,}
+
+generated="// GENERATED BLOCK"$'\n'
+generated+="const CACHE_NAME = '$cache_name';"$'\n'
+generated+="const ASSETS_TO_CACHE = ["$'\n'
+generated+="$manifest"$'\n'
+generated+="];"$'\n'
+generated+="// END GENERATED BLOCK"
+
+SW_BLOCK="$generated" perl -0777 -pi -e 's{// GENERATED BLOCK.*?// END GENERATED BLOCK}{$ENV{SW_BLOCK}}s or die "missing generated block\n"' app/sw.js
+git add app/index.html app/app.js app/sw.js
