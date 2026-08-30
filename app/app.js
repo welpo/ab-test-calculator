@@ -3,7 +3,7 @@ import {
   calculateExperimentSize,
   calculateMDE,
   calculateMDEFromSampleSize,
-} from "./statistics.js?h=1dead8d2";
+} from "./statistics.js?h=14f87ed8";
 
 const CSVPREFIX = "calculator.osc.garden";
 const LOCAL_STORAGE_KEY = "calculator.osc.garden.settings";
@@ -1135,7 +1135,7 @@ function getSampleSizeAndDurationForMde(mdeValue, state) {
     trafficDistribution: getTrafficDistributionAsDecimals(calculatorState),
   };
   if (isBinary) {
-    experimentConfig.baseline = state.baseline / 100;
+    experimentConfig.baseline = state.baseline;
     experimentConfig.absoluteMde = absoluteMde;
   } else {
     experimentConfig.metricType = "continuous";

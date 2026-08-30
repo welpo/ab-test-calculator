@@ -2455,7 +2455,7 @@ function buildTestConfig(testCase) {
   if (testCase.metricType === "continuous") {
     return { ...shared, metricType: "continuous", standardDeviation: testCase.standardDeviation, meanDifference: testCase.meanDifference };
   }
-  return { ...shared, baseline: testCase.baseline / 100, absoluteMde: testCase.absoluteMde };
+  return { ...shared, baseline: testCase.baseline, absoluteMde: testCase.absoluteMde };
 }
 
 async function runDirectTest(testCase) {
@@ -2509,7 +2509,7 @@ async function runSymmetryTest(testCase) {
   debugLog(`Test: ${testCase.name}`, "subheader");
   try {
     const experimentConfig = {
-      baseline: testCase.baseline / 100,
+      baseline: testCase.baseline,
       absoluteMde: testCase.absoluteMde,
       alpha: testCase.alpha,
       power: testCase.power,

@@ -134,9 +134,13 @@ function getBinaryParams(config, zAlpha, zBeta) {
   const direction =
     testType === "non-inferiority" ? -1 : Math.sign(absoluteMde);
   const absoluteEffectSize = direction * (absoluteMde / 100);
-  const treatmentCR = baseline + absoluteEffectSize;
+  const baselineRate = baseline / 100;
+  const treatmentCR = baselineRate + absoluteEffectSize;
   const epsilon = 1e-12; // To avoid division by zero or log(0).
-  const clippedBaseline = Math.max(epsilon, Math.min(1 - epsilon, baseline));
+  const clippedBaseline = Math.max(
+    epsilon,
+    Math.min(1 - epsilon, baselineRate),
+  );
   let varControl, varTreatment;
   if (testType === "non-inferiority" || testType === "equivalence") {
     varControl = clippedBaseline * (1.0 - clippedBaseline);
